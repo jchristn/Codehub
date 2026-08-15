@@ -246,6 +246,19 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
       try {
         await apiClient.startScan(repo.id);
         toast.info(t('repositories.rescanStarted', { name: repo.name }));
+        // Single-repo scans are quick; poll for completion, then refresh so the
+        // freshly-collected data (branch count, etc.) shows without waiting for auto-refresh.
+        const deadline = Date.now() + 60000;
+        const poll = () => {
+          apiClient
+            .getScanStatus()
+            .then((st) => {
+              if (!st?.isScanning || Date.now() > deadline) loadRef.current(true);
+              else setTimeout(poll, 1500);
+            })
+            .catch(() => loadRef.current(true));
+        };
+        setTimeout(poll, 1500);
       } catch (e) {
         if (e?.status === 409) toast.warning(t('common.scanning'));
         else toast.error(t('common.error'));
