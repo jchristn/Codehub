@@ -10,6 +10,7 @@ import RepositoryDetailModal from '../components/RepositoryDetailModal';
 import DirectoryPicker from '../components/DirectoryPicker';
 import AddMultipleModal from '../components/AddMultipleModal';
 import LaunchToolModal from '../components/LaunchToolModal';
+import ColumnPicker from '../components/ColumnPicker';
 import useDebounce from '../hooks/useDebounce';
 import { SIGNAL_TYPES, STORAGE, DEFAULT_PAGE_SIZE } from '../utils/constants';
 import { formatRelativeTime, formatDateTime } from '../i18n/formatters';
@@ -18,6 +19,7 @@ const EMPTY_FILTERS = {
   q: '',
   language: '',
   version: '',
+  frameworks: '',
   branch: '',
   commits: '',
   updated: '',
@@ -62,8 +64,27 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
   const [showPicker, setShowPicker] = useState(false);
   const [showAddMultiple, setShowAddMultiple] = useState(false);
   const [launch, setLaunch] = useState(null);
+  const [hiddenColumns, setHiddenColumns] = useState(() => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(STORAGE.repoHiddenColumns) || '[]'));
+    } catch {
+      return new Set();
+    }
+  });
 
   const debouncedFilters = useDebounce(filters, 300);
+
+  const persistHidden = (next) => {
+    setHiddenColumns(next);
+    localStorage.setItem(STORAGE.repoHiddenColumns, JSON.stringify([...next]));
+  };
+  const toggleColumn = (key) => {
+    const next = new Set(hiddenColumns);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    persistHidden(next);
+  };
+  const resetColumns = () => persistHidden(new Set());
 
   const load = useCallback(() => {
     if (!apiClient) return;
@@ -202,6 +223,28 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
 
   const columns = [
     {
+      key: 'actions',
+      label: t('common.actions'),
+      className: 'cell-actions',
+      render: (row) => (
+        <ActionMenu
+          items={[
+            { label: t('common.viewDetails'), onClick: () => setSelectedId(row.repository?.id) },
+            { label: t('actions.openExplorer'), onClick: () => openExternal(row.repository, 'explorer') },
+            { label: t('actions.openTerminal'), onClick: () => openExternal(row.repository, 'terminal') },
+            { label: t('actions.openClaude'), onClick: () => setLaunch({ repository: row.repository, tool: 'claude' }) },
+            { label: t('actions.openCodex'), onClick: () => setLaunch({ repository: row.repository, tool: 'codex' }) },
+            { label: t('actions.openMux'), onClick: () => setLaunch({ repository: row.repository, tool: 'mux' }) },
+            { label: t('actions.openOpenCode'), onClick: () => setLaunch({ repository: row.repository, tool: 'opencode' }) },
+            {
+              label: row.repository?.isIncluded ? t('repositories.excludeAction') : t('repositories.includeAction'),
+              onClick: () => toggleInclusion(row.repository)
+            }
+          ]}
+        />
+      )
+    },
+    {
       key: 'name',
       label: t('repositories.colRepository'),
       sortKey: 'name',
@@ -228,6 +271,23 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
       className: 'mono cell-nowrap',
       renderFilter: () => textFilter('version', t('repositories.colVersion')),
       render: (row) => row.repository?.currentVersion || '—'
+    },
+    {
+      key: 'frameworks',
+      label: t('repositories.colFrameworks'),
+      sortKey: 'frameworks',
+      className: 'mono',
+      renderFilter: () => textFilter('frameworks', t('repositories.colFrameworks')),
+      render: (row) => {
+        const fw = row.targetFrameworks || [];
+        if (fw.length === 0) return '—';
+        const text = fw.join(', ');
+        return (
+          <span className="cell-truncate" title={text}>
+            {text}
+          </span>
+        );
+      }
     },
     {
       key: 'branch',
@@ -275,30 +335,13 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
       className: 'cell-center',
       renderFilter: () => selectFilter('overall', RYG),
       render: (row) => <StatusBadge status={row.repository?.overallHealth} />
-    },
-    {
-      key: 'actions',
-      label: t('common.actions'),
-      className: 'cell-actions',
-      render: (row) => (
-        <ActionMenu
-          items={[
-            { label: t('common.viewDetails'), onClick: () => setSelectedId(row.repository?.id) },
-            { label: t('actions.openExplorer'), onClick: () => openExternal(row.repository, 'explorer') },
-            { label: t('actions.openTerminal'), onClick: () => openExternal(row.repository, 'terminal') },
-            { label: t('actions.openClaude'), onClick: () => setLaunch({ repository: row.repository, tool: 'claude' }) },
-            { label: t('actions.openCodex'), onClick: () => setLaunch({ repository: row.repository, tool: 'codex' }) },
-            { label: t('actions.openMux'), onClick: () => setLaunch({ repository: row.repository, tool: 'mux' }) },
-            { label: t('actions.openOpenCode'), onClick: () => setLaunch({ repository: row.repository, tool: 'opencode' }) },
-            {
-              label: row.repository?.isIncluded ? t('repositories.excludeAction') : t('repositories.includeAction'),
-              onClick: () => toggleInclusion(row.repository)
-            }
-          ]}
-        />
-      )
     }
   ];
+
+  // The repository name and the actions menu are always shown; everything else is toggleable.
+  const PINNED_COLUMNS = new Set(['name', 'actions']);
+  const toggleableColumns = columns.filter((c) => !PINNED_COLUMNS.has(c.key)).map((c) => ({ key: c.key, label: c.label }));
+  const visibleColumns = columns.filter((c) => PINNED_COLUMNS.has(c.key) || !hiddenColumns.has(c.key));
 
   const emptyMessage = hasActiveFilters ? t('repositories.noMatches') : t('repositories.empty');
 
@@ -340,6 +383,8 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
             {t('common.clear')}
           </button>
         )}
+        <div className="repo-toolbar-spacer" />
+        <ColumnPicker columns={toggleableColumns} hidden={hiddenColumns} onToggle={toggleColumn} onReset={resetColumns} />
       </div>
 
       <Pagination
@@ -353,7 +398,7 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
       />
 
       <DataTable
-        columns={columns}
+        columns={visibleColumns}
         rows={data.items}
         rowKey={(row) => row.repository?.id}
         onRowClick={(row) => setSelectedId(row.repository?.id)}

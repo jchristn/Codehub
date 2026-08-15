@@ -741,6 +741,17 @@ button.tiny,
 .cell-signal { min-width: 84px; }
 .cell-actions { text-align: right; width: 44px; }
 .cell-path { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cell-truncate {
+  display: inline-block;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* The repositories table can be wide (many columns) — let it use the full workspace. */
+.repositories-view { max-width: none; }
 
 .repo-cell { display: flex; flex-direction: column; gap: 0.1rem; min-width: 150px; }
 .repo-name { font-weight: 600; }
@@ -1222,6 +1233,57 @@ button.tiny,
 
 /* -------------------------------------------------- Per-column table filters */
 .repo-toolbar { display: flex; align-items: center; gap: var(--spacing-md); margin-bottom: var(--spacing-sm); }
+.repo-toolbar-spacer { flex: 1 1 auto; }
+
+/* -------------------------------------------------- Column visibility picker */
+.column-picker { position: relative; }
+.column-picker-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 30;
+  min-width: 200px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: var(--spacing-sm);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md, 0 4px 16px rgba(0, 0, 0, 0.18));
+}
+.column-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  padding: 0 0.25rem var(--spacing-xs);
+  margin-bottom: var(--spacing-xs);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.column-picker-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 0.35rem 0.25rem;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.column-picker-item:hover { background-color: var(--color-surface-alt); }
+.column-picker-item input[type='checkbox'] { width: 16px; height: 16px; flex: 0 0 auto; }
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+.link-button:hover { text-decoration: underline; }
 .data-table .filter-row th.filter-cell {
   position: sticky;
   top: 30px;

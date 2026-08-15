@@ -7,6 +7,7 @@ export const STORAGE = {
   apiKey: 'codehub.apiKey',
   theme: 'codehub.theme',
   repoPageSize: 'codehub.repoPageSize',
+  repoHiddenColumns: 'codehub.repoHiddenColumns',
   requestPageSize: 'codehub.requestPageSize',
   explorerHistory: 'codehub.explorerHistory'
 };

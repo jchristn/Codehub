@@ -21,6 +21,11 @@ namespace CodeHub.Core.Database.Interfaces
         Task<List<Project>> EnumerateByRepositoryAsync(string repositoryId, CancellationToken token = default);
 
         /// <summary>
+        /// Enumerate every project across all repositories.
+        /// </summary>
+        Task<List<Project>> EnumerateAllAsync(CancellationToken token = default);
+
+        /// <summary>
         /// Read a project by identifier.
         /// </summary>
         Task<Project> ReadAsync(string id, CancellationToken token = default);

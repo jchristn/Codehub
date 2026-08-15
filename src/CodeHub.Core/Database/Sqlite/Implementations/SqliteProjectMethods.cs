@@ -87,6 +87,17 @@ namespace CodeHub.Core.Database.Sqlite.Implementations
         }
 
         /// <inheritdoc />
+        public async Task<List<Project>> EnumerateAllAsync(CancellationToken token = default)
+        {
+            DataTable table = await _Db.ExecuteQueryAsync(
+                "SELECT * FROM projects ORDER BY repoid ASC, relativepath COLLATE NOCASE ASC;",
+                false, token).ConfigureAwait(false);
+            List<Project> results = new List<Project>();
+            foreach (DataRow row in table.Rows) results.Add(FromRow(row));
+            return results;
+        }
+
+        /// <inheritdoc />
         public async Task<Project> ReadAsync(string id, CancellationToken token = default)
         {
             if (String.IsNullOrEmpty(id)) throw new ArgumentNullException(nameof(id));

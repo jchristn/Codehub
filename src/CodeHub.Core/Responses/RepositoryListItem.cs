@@ -25,6 +25,12 @@ namespace CodeHub.Core.Responses
         /// </summary>
         public GitHubSnapshot GitHub { get; set; } = null;
 
+        /// <summary>
+        /// Distinct target frameworks across the repository's projects (e.g. "net8.0", "net10.0").
+        /// Multi-target project values (e.g. "net8.0;net10.0") are split into individual entries.
+        /// </summary>
+        public List<string> TargetFrameworks { get; set; } = new List<string>();
+
         #endregion
     }
 }

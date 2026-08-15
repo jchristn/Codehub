@@ -63,6 +63,11 @@ namespace CodeHub.Server.Routes
                 .GroupBy(s => s.RepositoryId)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
+            List<Project> allProjects = await _Ctx.Db.Projects.EnumerateAllAsync(ctx.Token).ConfigureAwait(false);
+            Dictionary<string, List<string>> frameworksByRepo = allProjects
+                .GroupBy(p => p.RepositoryId)
+                .ToDictionary(g => g.Key, g => RollupFrameworks(g));
+
             string health = RouteHelper.Query(ctx, "health");
             string language = RouteHelper.Query(ctx, "language");
             string visibility = RouteHelper.Query(ctx, "visibility");
@@ -116,7 +121,12 @@ namespace CodeHub.Server.Routes
             string issuepr = RouteHelper.Query(ctx, "issuepr");
             if (!String.IsNullOrEmpty(issuepr)) query = query.Where(r => MatchIssue(signalsByRepo, r.Id, issuepr));
 
-            List<Repository> filtered = OrderRepositories(query, sort, dir, signalsByRepo);
+            string frameworks = RouteHelper.Query(ctx, "frameworks");
+            if (!String.IsNullOrEmpty(frameworks)) query = query.Where(r =>
+                frameworksByRepo.TryGetValue(r.Id, out List<string> fw) &&
+                fw.Any(f => f.Contains(frameworks, StringComparison.OrdinalIgnoreCase)));
+
+            List<Repository> filtered = OrderRepositories(query, sort, dir, signalsByRepo, frameworksByRepo);
             int total = filtered.Count;
 
             List<Repository> pageRepos = filtered.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
@@ -127,7 +137,8 @@ namespace CodeHub.Server.Routes
                 {
                     Repository = repo,
                     Signals = signalsByRepo.TryGetValue(repo.Id, out List<Signal> s) ? s : new List<Signal>(),
-                    GitHub = await _Ctx.Db.GitHubSnapshots.ReadByRepositoryAsync(repo.Id, ctx.Token).ConfigureAwait(false)
+                    GitHub = await _Ctx.Db.GitHubSnapshots.ReadByRepositoryAsync(repo.Id, ctx.Token).ConfigureAwait(false),
+                    TargetFrameworks = frameworksByRepo.TryGetValue(repo.Id, out List<string> fw) ? fw : new List<string>()
                 };
                 items.Add(item);
             }
@@ -276,13 +287,32 @@ namespace CodeHub.Server.Routes
             await RouteHelper.SendJson(ctx, _Ctx.Serializer, 200, overview).ConfigureAwait(false);
         }
 
+        private static List<string> RollupFrameworks(IEnumerable<Project> projects)
+        {
+            HashSet<string> set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (Project p in projects)
+            {
+                if (String.IsNullOrWhiteSpace(p.TargetFramework)) continue;
+                foreach (string tf in p.TargetFramework.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    string trimmed = tf.Trim();
+                    if (trimmed.Length > 0) set.Add(trimmed);
+                }
+            }
+            List<string> list = set.ToList();
+            list.Sort(StringComparer.OrdinalIgnoreCase);
+            return list;
+        }
+
         private static List<Repository> OrderRepositories(
-            IEnumerable<Repository> repos, string sort, string dir, Dictionary<string, List<Signal>> signalsByRepo)
+            IEnumerable<Repository> repos, string sort, string dir,
+            Dictionary<string, List<Signal>> signalsByRepo, Dictionary<string, List<string>> frameworksByRepo)
         {
             bool desc = String.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase);
             switch ((sort ?? "name").ToLowerInvariant())
             {
                 case "path": return ApplyString(repos, r => r.Path, desc);
+                case "frameworks": return ApplyString(repos, r => frameworksByRepo.TryGetValue(r.Id, out List<string> fw) ? String.Join(",", fw) : String.Empty, desc);
                 case "language": return ApplyString(repos, r => r.PrimaryLanguage.ToString(), desc);
                 case "visibility": return ApplyString(repos, r => r.Visibility.ToString(), desc);
                 case "version": return ApplyString(repos, r => r.CurrentVersion, desc);
