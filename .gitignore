@@ -21,6 +21,8 @@ logs/
 node_modules/
 dashboard/dist/
 dashboard/.vite/
+# Built dashboard copied into the server output/project dir during build or `dotnet run`
+src/CodeHub.Server/dashboard/
 npm-debug.log*
 
 # OS

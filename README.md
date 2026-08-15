@@ -82,8 +82,9 @@ have checked out.
 
 ## Getting started
 
-You need the [.NET 10 SDK](https://dotnet.microsoft.com/download) and
+You need the [.NET 8 or .NET 10 SDK](https://dotnet.microsoft.com/download) and
 [Node.js](https://nodejs.org/) (the dashboard is built automatically during the .NET build).
+CodeHub multitargets `net8.0` and `net10.0`.
 
 ### The really simple way
 
@@ -102,13 +103,20 @@ It builds the dashboard and backend, then starts the server on the standard port
 http://127.0.0.1:8090/dashboard
 ```
 
+The launcher runs on `net10.0` by default. Pass a framework to pick the runtime:
+
+```bash
+./go.sh net8.0     # macOS / Linux
+go.bat net8.0      # Windows
+```
+
 ### The manual way
 
-If you'd rather drive it yourself:
+If you'd rather drive it yourself (the `--framework` flag is required because the project multitargets):
 
 ```bash
 cd codehub/src
-dotnet run --project CodeHub.Server
+dotnet run --project CodeHub.Server --framework net10.0
 ```
 
 The build compiles the React dashboard and the backend serves it, so once it's up open the same URL:
