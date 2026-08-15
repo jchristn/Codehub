@@ -135,9 +135,24 @@ Want a different port?
 dotnet run --project CodeHub.Server -- --port 8000
 ```
 
-To light up the **Issues / PRs / Dependabot** columns, drop a GitHub personal access token into the
-`github` section of `codehub.json` (or edit it from the Settings page). Without one, everything else
-still works and those columns simply say "not configured."
+### GitHub personal access token
+
+The **Issues / PRs / Dependabot** and **Archived** columns come from the GitHub API, so they only
+populate once you give CodeHub a GitHub personal access token (PAT). Add it to the `github` section of
+`codehub.json`:
+
+```json
+"github": {
+  "personalAccessToken": "ghp_your_token_here",
+  "owner": ""
+}
+```
+
+Then restart CodeHub and run a scan. You can also set it from the **Settings** page in the dashboard
+(which writes back to the same file), or via the `CODEHUB_GITHUB_PAT` environment variable. A
+classic PAT with the `repo` scope (plus `security_events` if you want Dependabot alerts) is enough;
+a fine-grained token with read access to the repositories works too. Without a token, everything else
+still works and the GitHub-derived columns simply stay blank.
 
 > **Heads up:** the first full scan of a large tree runs `dotnet list package --outdated` per project
 > and can take a while. Every scan after that is incremental and quick. You can turn dependency

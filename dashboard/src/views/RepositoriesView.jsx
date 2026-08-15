@@ -523,7 +523,12 @@ function githubWebUrl(repo) {
   if (ssh) url = `https://${ssh[1]}/${ssh[2]}`;
   url = url.replace(/^ssh:\/\/git@/i, 'https://').replace(/\.git\/?$/i, '');
   if (!/^https?:\/\//i.test(url)) return null;
-  if (!/(^|\.)github\.com\//i.test(url)) return null;
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    if (host !== 'github.com' && !host.endsWith('.github.com')) return null;
+  } catch {
+    return null;
+  }
   return url;
 }
 
