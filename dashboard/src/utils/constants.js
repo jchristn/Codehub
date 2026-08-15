@@ -8,6 +8,7 @@ export const STORAGE = {
   theme: 'codehub.theme',
   repoPageSize: 'codehub.repoPageSize',
   repoHiddenColumns: 'codehub.repoHiddenColumns',
+  repoAutoRefresh: 'codehub.repoAutoRefresh',
   requestPageSize: 'codehub.requestPageSize',
   explorerHistory: 'codehub.explorerHistory'
 };
@@ -22,6 +23,10 @@ export const GITHUB_REPO_URL = 'https://github.com/jchristn/codehub';
 
 export const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 250, 500, 1000];
 export const DEFAULT_PAGE_SIZE = 25;
+
+/** Auto-refresh intervals for the repositories table, in seconds (0 = off). */
+export const AUTO_REFRESH_OPTIONS = [0, 15, 30, 60, 120, 180];
+export const DEFAULT_AUTO_REFRESH = 60;
 
 /** Health status → semantic token mapping. Color is never the only signal. */
 export const HEALTH = {

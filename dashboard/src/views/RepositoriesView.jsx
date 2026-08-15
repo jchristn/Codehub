@@ -14,7 +14,7 @@ import ColumnPicker from '../components/ColumnPicker';
 import ConfirmModal from '../components/ConfirmModal';
 import InvokeCustomActionModal from '../components/InvokeCustomActionModal';
 import useDebounce from '../hooks/useDebounce';
-import { SIGNAL_TYPES, STORAGE, DEFAULT_PAGE_SIZE } from '../utils/constants';
+import { SIGNAL_TYPES, STORAGE, DEFAULT_PAGE_SIZE, AUTO_REFRESH_OPTIONS, DEFAULT_AUTO_REFRESH } from '../utils/constants';
 import { formatRelativeTime, formatDateTime } from '../i18n/formatters';
 
 const EMPTY_FILTERS = {
@@ -73,6 +73,10 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
   const [archiving, setArchiving] = useState(false);
   const [customActions, setCustomActions] = useState([]);
   const [invoke, setInvoke] = useState(null); // { repository, action }
+  const [autoRefresh, setAutoRefresh] = useState(() => {
+    const v = localStorage.getItem(STORAGE.repoAutoRefresh);
+    return v !== null && v !== '' ? Number(v) : DEFAULT_AUTO_REFRESH;
+  });
   const [hiddenColumns, setHiddenColumns] = useState(() => {
     try {
       return new Set(JSON.parse(localStorage.getItem(STORAGE.repoHiddenColumns) || '[]'));
@@ -95,23 +99,28 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
   };
   const resetColumns = () => persistHidden(new Set());
 
-  const load = useCallback(() => {
-    if (!apiClient) return;
-    setLoading(true);
-    setError(null);
-    apiClient
-      .getRepositories({
-        ...debouncedFilters,
-        includeExcluded: includeExcluded ? 'true' : '',
-        sort,
-        dir,
-        pageNumber,
-        pageSize
-      })
-      .then((res) => setData(res || { items: [], totalCount: 0 }))
-      .catch(() => setError(t('common.error')))
-      .finally(() => setLoading(false));
-  }, [apiClient, debouncedFilters, includeExcluded, sort, dir, pageNumber, pageSize, t]);
+  const load = useCallback(
+    (silent = false) => {
+      if (!apiClient) return;
+      if (!silent) setLoading(true);
+      setError(null);
+      apiClient
+        .getRepositories({
+          ...debouncedFilters,
+          includeExcluded: includeExcluded ? 'true' : '',
+          sort,
+          dir,
+          pageNumber,
+          pageSize
+        })
+        .then((res) => setData(res || { items: [], totalCount: 0 }))
+        .catch(() => setError(t('common.error')))
+        .finally(() => {
+          if (!silent) setLoading(false);
+        });
+    },
+    [apiClient, debouncedFilters, includeExcluded, sort, dir, pageNumber, pageSize, t]
+  );
 
   useEffect(() => {
     load();
@@ -137,6 +146,18 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
     }
     loadRef.current();
   }, [hiddenColumns]);
+
+  // Auto-refresh the table at the selected interval (silent — no loading spinner flash).
+  useEffect(() => {
+    if (!autoRefresh) return undefined;
+    const id = setInterval(() => loadRef.current(true), autoRefresh * 1000);
+    return () => clearInterval(id);
+  }, [autoRefresh]);
+
+  const changeAutoRefresh = (value) => {
+    setAutoRefresh(value);
+    localStorage.setItem(STORAGE.repoAutoRefresh, String(value));
+  };
 
   // Reset to page 1 when filters/sort change.
   useEffect(() => {
@@ -527,6 +548,16 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
           </button>
         )}
         <div className="repo-toolbar-spacer" />
+        <label className="auto-refresh">
+          <span>{t('repositories.autoRefresh')}</span>
+          <select value={autoRefresh} onChange={(e) => changeAutoRefresh(Number(e.target.value))}>
+            {AUTO_REFRESH_OPTIONS.map((sec) => (
+              <option key={sec} value={sec}>
+                {sec === 0 ? t('repositories.autoRefreshNone') : t('repositories.autoRefreshSeconds', { n: sec })}
+              </option>
+            ))}
+          </select>
+        </label>
         <ColumnPicker columns={toggleableColumns} hidden={hiddenColumns} onToggle={toggleColumn} onReset={resetColumns} />
       </div>
 

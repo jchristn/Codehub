@@ -1315,6 +1315,8 @@ button.tiny,
 /* -------------------------------------------------- Per-column table filters */
 .repo-toolbar { display: flex; align-items: center; gap: var(--spacing-md); margin-bottom: var(--spacing-sm); }
 .repo-toolbar-spacer { flex: 1 1 auto; }
+.auto-refresh { display: flex; align-items: center; gap: var(--spacing-xs); font-size: var(--font-size-xs); color: var(--color-text-secondary); white-space: nowrap; }
+.auto-refresh select { font-size: var(--font-size-xs); padding: 0.2rem 0.4rem; }
 
 /* -------------------------------------------------- Column visibility picker */
 .column-picker { position: relative; }
