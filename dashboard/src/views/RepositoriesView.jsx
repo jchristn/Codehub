@@ -230,6 +230,14 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
         <ActionMenu
           items={[
             { label: t('common.viewDetails'), onClick: () => setSelectedId(row.repository?.id) },
+            {
+              label: t('actions.openGithub'),
+              disabled: !githubWebUrl(row.repository),
+              onClick: () => {
+                const gh = githubWebUrl(row.repository);
+                if (gh) window.open(gh, '_blank', 'noopener,noreferrer');
+              }
+            },
             { label: t('actions.openExplorer'), onClick: () => openExternal(row.repository, 'explorer') },
             { label: t('actions.openTerminal'), onClick: () => openExternal(row.repository, 'terminal') },
             { label: t('actions.openClaude'), onClick: () => setLaunch({ repository: row.repository, tool: 'claude' }) },
@@ -293,9 +301,17 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
       key: 'branch',
       label: t('repositories.colBranch'),
       sortKey: 'branch',
-      className: 'mono cell-nowrap',
+      className: 'mono',
       renderFilter: () => textFilter('branch', t('repositories.colBranch')),
-      render: (row) => row.repository?.currentBranch || '—'
+      render: (row) => {
+        const branch = row.repository?.currentBranch;
+        if (!branch) return '—';
+        return (
+          <span className="cell-truncate" title={branch}>
+            {branch}
+          </span>
+        );
+      }
     },
     {
       key: 'aheadBehind',
@@ -435,6 +451,22 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
 function shortLanguages(languages) {
   if (!languages || languages.length === 0) return '—';
   return languages.map((l) => LANG_SHORT[l] || l).join(', ');
+}
+
+/**
+ * Normalize a repository's remote URL to a browsable GitHub web URL, or null if the
+ * repository has no GitHub remote (SSH, https, and ssh:// forms are all handled).
+ */
+function githubWebUrl(repo) {
+  const raw = repo?.remoteUrl;
+  if (!raw) return null;
+  let url = raw.trim();
+  const ssh = url.match(/^git@([^:]+):(.+?)(?:\.git)?\/?$/i); // git@github.com:owner/repo.git
+  if (ssh) url = `https://${ssh[1]}/${ssh[2]}`;
+  url = url.replace(/^ssh:\/\/git@/i, 'https://').replace(/\.git\/?$/i, '');
+  if (!/^https?:\/\//i.test(url)) return null;
+  if (!/(^|\.)github\.com\//i.test(url)) return null;
+  return url;
 }
 
 export default RepositoriesView;

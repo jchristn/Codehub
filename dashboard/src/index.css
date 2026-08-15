@@ -1023,8 +1023,9 @@ button.tiny,
   font-size: var(--font-size-sm);
   background: transparent;
 }
-.action-menu-item:hover { background-color: var(--color-surface-hover); }
+.action-menu-item:hover:not(:disabled) { background-color: var(--color-surface-hover); }
 .action-menu-item.danger { color: var(--color-danger); }
+.action-menu-item:disabled { color: var(--color-text-muted); opacity: 0.5; cursor: not-allowed; }
 .action-trigger { font-size: 1.2rem; }
 
 /* ---------------------------------------------------------------- Toast */

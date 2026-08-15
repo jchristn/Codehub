@@ -93,6 +93,7 @@ const en = {
     noEvidence: 'No evidence recorded.'
   },
   actions: {
+    openGithub: 'Open in GitHub',
     openExplorer: 'Open in Explorer',
     openTerminal: 'Open in Terminal',
     openClaude: 'Open Claude',
@@ -484,6 +485,7 @@ const es = {
     noEvidence: 'No se registró evidencia.'
   },
   actions: {
+    openGithub: 'Abrir en GitHub',
     openExplorer: 'Abrir en el Explorador',
     openTerminal: 'Abrir en la Terminal',
     openClaude: 'Abrir Claude',
@@ -816,6 +818,7 @@ const fr = {
     noEvidence: 'Aucune preuve enregistrée.'
   },
   actions: {
+    openGithub: 'Ouvrir dans GitHub',
     openExplorer: 'Ouvrir dans l’Explorateur',
     openTerminal: 'Ouvrir dans le Terminal',
     openClaude: 'Ouvrir Claude',
@@ -1148,6 +1151,7 @@ const de = {
     noEvidence: 'Kein Nachweis erfasst.'
   },
   actions: {
+    openGithub: 'In GitHub öffnen',
     openExplorer: 'Im Explorer öffnen',
     openTerminal: 'Im Terminal öffnen',
     openClaude: 'Claude öffnen',
@@ -1480,6 +1484,7 @@ const pt = {
     noEvidence: 'Nenhuma evidência registrada.'
   },
   actions: {
+    openGithub: 'Abrir no GitHub',
     openExplorer: 'Abrir no Explorador',
     openTerminal: 'Abrir no Terminal',
     openClaude: 'Abrir Claude',
