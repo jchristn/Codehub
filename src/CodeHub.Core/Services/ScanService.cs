@@ -119,6 +119,10 @@ namespace CodeHub.Core.Services
 
                 List<string> excluded = sets.Excluded;
 
+                // Manual scans (Scan Now / Rescan Now) and single-repository scans force a full
+                // re-collection so every column is repopulated, bypassing the git-HEAD delta skip.
+                bool force = trigger == ScanTriggerEnum.Manual || !String.IsNullOrEmpty(repositoryId);
+
                 int scanned = 0;
                 SemaphoreSlim gate = new SemaphoreSlim(_Settings.Scan.MaxConcurrency);
                 List<Task> tasks = new List<Task>();
@@ -130,7 +134,7 @@ namespace CodeHub.Core.Services
                     {
                         try
                         {
-                            await ProcessRepositoryAsync(root, excluded, token).ConfigureAwait(false);
+                            await ProcessRepositoryAsync(root, excluded, force, token).ConfigureAwait(false);
                         }
                         catch (Exception e)
                         {
@@ -202,7 +206,7 @@ namespace CodeHub.Core.Services
             return discovery.FindRepositoryRootsFromSelection(sets.Included);
         }
 
-        private async Task ProcessRepositoryAsync(string root, List<string> excluded, CancellationToken token)
+        private async Task ProcessRepositoryAsync(string root, List<string> excluded, bool force, CancellationToken token)
         {
             Repository existing = await _Db.Repositories.ReadByPathAsync(root, token).ConfigureAwait(false);
 
@@ -219,7 +223,8 @@ namespace CodeHub.Core.Services
             bool isGit = Directory.Exists(Path.Combine(root, ".git"));
 
             // Delta: skip a git repository whose HEAD is unchanged since its last scan.
-            if (existing != null && existing.LastScannedUtc.HasValue && isGit && !String.IsNullOrEmpty(existing.LastCommitHash))
+            // Forced (manual / single-repo) scans always re-collect so every column is repopulated.
+            if (!force && existing != null && existing.LastScannedUtc.HasValue && isGit && !String.IsNullOrEmpty(existing.LastCommitHash))
             {
                 string currentHash = await GitCollector.GetHeadHashAsync(root, token).ConfigureAwait(false);
                 if (!String.IsNullOrEmpty(currentHash) && currentHash == existing.LastCommitHash)

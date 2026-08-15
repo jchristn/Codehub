@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '../context/ToastContext';
 import PageHeader from '../components/PageHeader';
@@ -125,6 +125,18 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
       .then((res) => setCustomActions(res || []))
       .catch(() => setCustomActions([]));
   }, [apiClient]);
+
+  // Refresh the table when the visible columns change (skip the initial mount).
+  const loadRef = useRef(load);
+  loadRef.current = load;
+  const columnsMounted = useRef(false);
+  useEffect(() => {
+    if (!columnsMounted.current) {
+      columnsMounted.current = true;
+      return;
+    }
+    loadRef.current();
+  }, [hiddenColumns]);
 
   // Reset to page 1 when filters/sort change.
   useEffect(() => {
