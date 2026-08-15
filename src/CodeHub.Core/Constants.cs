@@ -16,6 +16,19 @@ namespace CodeHub.Core
         public const string SoftwareVersion = "0.1.0";
 
         /// <summary>
+        /// ASCII-art startup banner.
+        /// </summary>
+        public const string Logo =
+@"                          $$\           $$\                 $$\
+                          $$ |          $$ |                $$ |
+ $$$$$$$\  $$$$$$\   $$$$$$$ | $$$$$$\  $$$$$$$\  $$\   $$\ $$$$$$$\
+$$  _____|$$  __$$\ $$  __$$ |$$  __$$\ $$  __$$\ $$ |  $$ |$$  __$$\
+$$ /      $$ /  $$ |$$ /  $$ |$$$$$$$$ |$$ |  $$ |$$ |  $$ |$$ |  $$ |
+$$ |      $$ |  $$ |$$ |  $$ |$$   ____|$$ |  $$ |$$ |  $$ |$$ |  $$ |
+\$$$$$$$\ \$$$$$$  |\$$$$$$$ |\$$$$$$$\ $$ |  $$ |\$$$$$$  |$$$$$$$  |
+ \_______| \______/  \_______| \_______|\__|  \__| \______/ \_______/ ";
+
+        /// <summary>
         /// Total identifier length including the prefix.
         /// </summary>
         public const int IdLength = 32;

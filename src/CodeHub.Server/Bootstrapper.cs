@@ -70,6 +70,7 @@ namespace CodeHub.Server
             AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
             TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
+            Console.Write("\n\n" + Constants.Logo + "\n\n");
             Console.WriteLine(Constants.ProductName + " " + Constants.SoftwareVersion);
             _Logging.Info(Header + "starting " + Constants.ProductName + " " + Constants.SoftwareVersion
                 + " (pid " + Environment.ProcessId + ", " + RuntimeInformation.FrameworkDescription + ", "
