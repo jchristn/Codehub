@@ -703,10 +703,9 @@ button.tiny,
   overflow-x: auto;
 }
 .data-table {
-  width: 100%;
-  /* Take natural column widths and let .data-table-scroll scroll horizontally
-     when there are more columns than fit, instead of squishing them. */
-  min-width: max-content;
+  /* Size to content so columns stay tight instead of stretching to fill the
+     workspace; .data-table-scroll scrolls horizontally when content overflows. */
+  width: auto;
   border-collapse: collapse;
   font-size: var(--font-size-sm);
 }
