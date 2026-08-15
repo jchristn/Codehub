@@ -357,6 +357,19 @@ const en = {
     message: "The page you're looking for doesn't exist or has moved.",
     back: 'Back to dashboard'
   },
+  bulkAction: {
+    selectAll: 'Select all',
+    selectRow: 'Select repository',
+    selected: '{{count}} selected',
+    apply: 'Apply Custom Action',
+    clear: 'Clear',
+    title: 'Apply action to {{count}} repositories',
+    run: 'Run on {{count}}',
+    action: 'Custom action',
+    targets: 'Targets ({{count}})',
+    launched: 'Launched {{count}} terminal(s).',
+    partial: 'Launched {{ok}}; {{failed}} failed.'
+  },
   branches: {
     view: 'View Branches',
     title: 'Branches',
@@ -806,6 +819,19 @@ const es = {
     message: 'La página que buscas no existe o se ha movido.',
     back: 'Volver al panel'
   },
+  bulkAction: {
+    selectAll: 'Seleccionar todo',
+    selectRow: 'Seleccionar repositorio',
+    selected: '{{count}} seleccionados',
+    apply: 'Aplicar acción personalizada',
+    clear: 'Limpiar',
+    title: 'Aplicar acción a {{count}} repositorios',
+    run: 'Ejecutar en {{count}}',
+    action: 'Acción personalizada',
+    targets: 'Destinos ({{count}})',
+    launched: 'Se iniciaron {{count}} terminal(es).',
+    partial: 'Se iniciaron {{ok}}; {{failed}} fallaron.'
+  },
   branches: {
     view: 'Ver ramas',
     title: 'Ramas',
@@ -1200,6 +1226,19 @@ const fr = {
     title: 'Page introuvable',
     message: "La page que vous recherchez n'existe pas ou a été déplacée.",
     back: 'Retour au tableau de bord'
+  },
+  bulkAction: {
+    selectAll: 'Tout sélectionner',
+    selectRow: 'Sélectionner le dépôt',
+    selected: '{{count}} sélectionnés',
+    apply: 'Appliquer une action personnalisée',
+    clear: 'Effacer',
+    title: 'Appliquer l’action à {{count}} dépôts',
+    run: 'Exécuter sur {{count}}',
+    action: 'Action personnalisée',
+    targets: 'Cibles ({{count}})',
+    launched: '{{count}} terminal(aux) lancé(s).',
+    partial: '{{ok}} lancé(s) ; {{failed}} en échec.'
   },
   branches: {
     view: 'Voir les branches',
@@ -1596,6 +1635,19 @@ const de = {
     message: 'Die gesuchte Seite existiert nicht oder wurde verschoben.',
     back: 'Zurück zum Dashboard'
   },
+  bulkAction: {
+    selectAll: 'Alle auswählen',
+    selectRow: 'Repository auswählen',
+    selected: '{{count}} ausgewählt',
+    apply: 'Benutzerdefinierte Aktion anwenden',
+    clear: 'Löschen',
+    title: 'Aktion auf {{count}} Repositories anwenden',
+    run: 'Auf {{count}} ausführen',
+    action: 'Benutzerdefinierte Aktion',
+    targets: 'Ziele ({{count}})',
+    launched: '{{count}} Terminal(s) gestartet.',
+    partial: '{{ok}} gestartet; {{failed}} fehlgeschlagen.'
+  },
   branches: {
     view: 'Branches anzeigen',
     title: 'Branches',
@@ -1990,6 +2042,19 @@ const pt = {
     title: 'Página não encontrada',
     message: 'A página que você procura não existe ou foi movida.',
     back: 'Voltar ao painel'
+  },
+  bulkAction: {
+    selectAll: 'Selecionar tudo',
+    selectRow: 'Selecionar repositório',
+    selected: '{{count}} selecionados',
+    apply: 'Aplicar ação personalizada',
+    clear: 'Limpar',
+    title: 'Aplicar ação a {{count}} repositórios',
+    run: 'Executar em {{count}}',
+    action: 'Ação personalizada',
+    targets: 'Alvos ({{count}})',
+    launched: '{{count}} terminal(is) iniciado(s).',
+    partial: '{{ok}} iniciado(s); {{failed}} falharam.'
   },
   branches: {
     view: 'Ver ramos',

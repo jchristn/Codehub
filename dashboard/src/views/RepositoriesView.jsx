@@ -14,6 +14,8 @@ import ColumnPicker from '../components/ColumnPicker';
 import ConfirmModal from '../components/ConfirmModal';
 import InvokeCustomActionModal from '../components/InvokeCustomActionModal';
 import BranchesModal from '../components/BranchesModal';
+import SelectAllCheckbox from '../components/SelectAllCheckbox';
+import BulkCustomActionModal from '../components/BulkCustomActionModal';
 import useDebounce from '../hooks/useDebounce';
 import { SIGNAL_TYPES, STORAGE, DEFAULT_PAGE_SIZE, AUTO_REFRESH_OPTIONS, DEFAULT_AUTO_REFRESH } from '../utils/constants';
 import { formatRelativeTime, formatDateTime } from '../i18n/formatters';
@@ -75,6 +77,8 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
   const [customActions, setCustomActions] = useState([]);
   const [invoke, setInvoke] = useState(null); // { repository, action }
   const [branchesRepo, setBranchesRepo] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [showBulk, setShowBulk] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(() => {
     const v = localStorage.getItem(STORAGE.repoAutoRefresh);
     return v !== null && v !== '' ? Number(v) : DEFAULT_AUTO_REFRESH;
@@ -160,6 +164,32 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
     setAutoRefresh(value);
     localStorage.setItem(STORAGE.repoAutoRefresh, String(value));
   };
+
+  // Multi-select (per visible page). Selection clears when the visible set changes.
+  const currentIds = data.items.map((i) => i.repository?.id).filter(Boolean);
+  const allSelected = currentIds.length > 0 && currentIds.every((id) => selectedIds.has(id));
+  const someSelected = currentIds.some((id) => selectedIds.has(id)) && !allSelected;
+  const selectedRepositories = data.items.map((i) => i.repository).filter((r) => r && selectedIds.has(r.id));
+
+  const toggleSelect = (id) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const toggleSelectAll = () =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allSelected) currentIds.forEach((id) => next.delete(id));
+      else currentIds.forEach((id) => next.add(id));
+      return next;
+    });
+  const clearSelection = () => setSelectedIds(new Set());
+
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [pageNumber, debouncedFilters, sort, dir, includeExcluded]);
 
   // Reset to page 1 when filters/sort change.
   useEffect(() => {
@@ -335,6 +365,27 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
   }));
 
   const columns = [
+    {
+      key: 'select',
+      label: (
+        <SelectAllCheckbox
+          checked={allSelected}
+          indeterminate={someSelected}
+          onChange={toggleSelectAll}
+          title={t('bulkAction.selectAll')}
+        />
+      ),
+      className: 'cell-select',
+      render: (row) => (
+        <input
+          type="checkbox"
+          checked={selectedIds.has(row.repository?.id)}
+          onChange={() => toggleSelect(row.repository?.id)}
+          data-no-row-click
+          aria-label={t('bulkAction.selectRow')}
+        />
+      )
+    },
     {
       key: 'actions',
       label: t('common.actions'),
@@ -526,7 +577,7 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
   ];
 
   // The repository name and the actions menu are always shown; everything else is toggleable.
-  const PINNED_COLUMNS = new Set(['name', 'actions']);
+  const PINNED_COLUMNS = new Set(['select', 'name', 'actions']);
   const toggleableColumns = columns.filter((c) => !PINNED_COLUMNS.has(c.key)).map((c) => ({ key: c.key, label: c.label }));
   const visibleColumns = columns.filter((c) => PINNED_COLUMNS.has(c.key) || !hiddenColumns.has(c.key));
 
@@ -569,6 +620,17 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
           <button type="button" className="button-secondary tiny" onClick={clearFilters}>
             {t('common.clear')}
           </button>
+        )}
+        {selectedIds.size > 0 && (
+          <div className="bulk-bar">
+            <span className="bulk-count">{t('bulkAction.selected', { count: selectedIds.size })}</span>
+            <button type="button" className="button-primary tiny" onClick={() => setShowBulk(true)}>
+              {t('bulkAction.apply')}
+            </button>
+            <button type="button" className="button-secondary tiny" onClick={clearSelection}>
+              {t('bulkAction.clear')}
+            </button>
+          </div>
         )}
         <div className="repo-toolbar-spacer" />
         <label className="auto-refresh">
@@ -637,6 +699,16 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
 
       {branchesRepo && (
         <BranchesModal apiClient={apiClient} repository={branchesRepo} onClose={() => setBranchesRepo(null)} />
+      )}
+
+      {showBulk && (
+        <BulkCustomActionModal
+          apiClient={apiClient}
+          repositories={selectedRepositories}
+          customActions={customActions}
+          onClose={() => setShowBulk(false)}
+          onDone={clearSelection}
+        />
       )}
 
       <ConfirmModal
