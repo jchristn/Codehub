@@ -1019,6 +1019,8 @@ button.tiny,
   position: fixed;
   z-index: 2500;
   min-width: 180px;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
   background-color: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
