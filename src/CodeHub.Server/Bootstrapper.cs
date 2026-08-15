@@ -2,6 +2,7 @@ namespace CodeHub.Server
 {
     using System;
     using System.IO;
+    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
     using CodeHub.Core;
@@ -28,6 +29,7 @@ namespace CodeHub.Server
         private static string _SettingsFile;
         private static readonly CancellationTokenSource _Cts = new CancellationTokenSource();
         private static readonly ManualResetEventSlim _Exit = new ManualResetEventSlim(false);
+        private static int _ShuttingDown;
         private const string Header = "[CodeHub] ";
 
         #endregion
@@ -40,7 +42,18 @@ namespace CodeHub.Server
         /// <param name="args">Command-line arguments.</param>
         public static void Run(string[] args)
         {
-            RunAsync(args).GetAwaiter().GetResult();
+            try
+            {
+                RunAsync(args).GetAwaiter().GetResult();
+            }
+            catch (Exception e)
+            {
+                // Server is exiting because of an unhandled exception on the main path.
+                string message = Header + "server exiting due to an unhandled exception:\n" + e.ToString();
+                if (_Logging != null) _Logging.Error(message);
+                else Console.Error.WriteLine(message);
+                Environment.ExitCode = 1;
+            }
         }
 
         #endregion
@@ -53,8 +66,14 @@ namespace CodeHub.Server
             ApplyCommandLineArguments(args);
             InitializeLogging();
 
+            // Log any exception that would otherwise take the process down silently.
+            AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+            TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+
             Console.WriteLine(Constants.ProductName + " " + Constants.SoftwareVersion);
-            _Logging.Info(Header + "starting");
+            _Logging.Info(Header + "starting " + Constants.ProductName + " " + Constants.SoftwareVersion
+                + " (pid " + Environment.ProcessId + ", " + RuntimeInformation.FrameworkDescription + ", "
+                + RuntimeInformation.OSDescription.Trim() + ")");
 
             _Db = await DatabaseDriverFactory.CreateAndInitializeAsync(_Settings.Database, _Cts.Token).ConfigureAwait(false);
             _Logging.Info(Header + "database initialized (" + _Settings.Database.Type + ")");
@@ -88,10 +107,15 @@ namespace CodeHub.Server
 
             StartBackgroundLoops();
 
-            Console.CancelKeyPress += (s, e) => { e.Cancel = true; Shutdown(); };
-            AppDomain.CurrentDomain.ProcessExit += (s, e) => Shutdown();
+            Console.CancelKeyPress += (s, e) => { e.Cancel = true; Shutdown("Ctrl+C / SIGINT received"); };
+            AppDomain.CurrentDomain.ProcessExit += (s, e) => Shutdown("process exit");
+
+            _Logging.Info(Header + "startup complete; listening on " + _Settings.Webserver.Hostname + ":" + _Settings.Webserver.Port
+                + ", dashboard at /dashboard");
 
             _Exit.Wait();
+
+            _Logging.Info(Header + "run loop exited; server has stopped");
         }
 
         private static void LoadSettings()
@@ -224,23 +248,45 @@ namespace CodeHub.Server
             });
         }
 
-        private static void Shutdown()
+        private static void Shutdown(string reason)
         {
+            // Only the first caller performs (and logs) shutdown; ProcessExit + Ctrl+C can both fire.
+            if (Interlocked.Exchange(ref _ShuttingDown, 1) != 0) return;
+
             try
             {
-                _Logging?.Info(Header + "shutting down");
+                _Logging?.Info(Header + "shutting down (reason: " + (reason ?? "unspecified") + ")");
                 _Cts.Cancel();
                 _Server?.Stop();
                 _Db?.Dispose();
+                _Logging?.Info(Header + "shutdown complete");
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                // ignore
+                _Logging?.Warn(Header + "error during shutdown: " + e.Message);
             }
             finally
             {
                 _Exit.Set();
             }
+        }
+
+        private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            Exception ex = e.ExceptionObject as Exception;
+            string detail = ex != null ? ex.ToString() : Convert.ToString(e.ExceptionObject);
+            string message = Header + "UNHANDLED EXCEPTION (terminating=" + e.IsTerminating + "):\n" + detail;
+            if (_Logging != null) _Logging.Error(message);
+            else Console.Error.WriteLine(message);
+
+            // If the runtime is tearing the process down, record why we're exiting.
+            if (e.IsTerminating) _Logging?.Info(Header + "process is terminating due to an unhandled exception");
+        }
+
+        private static void OnUnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
+        {
+            _Logging?.Error(Header + "UNOBSERVED TASK EXCEPTION:\n" + e.Exception.ToString());
+            e.SetObserved(); // prevent this from escalating to a process-terminating exception
         }
 
         #endregion
