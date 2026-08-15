@@ -2,6 +2,7 @@ namespace CodeHub.Server.Routes
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
     using CodeHub.Core.Enums;
@@ -49,6 +50,7 @@ namespace CodeHub.Server.Routes
             server.Routes.PostAuthentication.Parameter.Add(HttpMethod.POST, "/v1.0/api/repositories/{id}/include", IncludeAsync);
             server.Routes.PostAuthentication.Parameter.Add(HttpMethod.POST, "/v1.0/api/repositories/{id}/exclude", ExcludeAsync);
             server.Routes.PostAuthentication.Parameter.Add(HttpMethod.POST, "/v1.0/api/repositories/{id}/open", OpenAsync);
+            server.Routes.PostAuthentication.Parameter.Add(HttpMethod.POST, "/v1.0/api/repositories/{id}/delete", DeleteRepoAsync);
         }
 
         #endregion
@@ -248,6 +250,45 @@ namespace CodeHub.Server.Routes
             {
                 _Ctx.Logging.Warn("[RepositoryRoutes] open failed: " + e.Message);
                 await RouteHelper.SendJson(ctx, _Ctx.Serializer, 500, new ErrorResponse("LaunchFailed", e.Message)).ConfigureAwait(false);
+            }
+        }
+
+        private async Task DeleteRepoAsync(HttpContextBase ctx)
+        {
+            string id = ctx.Request.Url.Parameters["id"];
+            Repository repo = await _Ctx.Db.Repositories.ReadAsync(id, ctx.Token).ConfigureAwait(false);
+            if (repo == null)
+            {
+                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 404, new ErrorResponse("NotFound", "Repository not found.")).ConfigureAwait(false);
+                return;
+            }
+
+            string body = ctx.Request.DataAsString;
+            DeleteRepositoryRequest request = String.IsNullOrEmpty(body) ? null : _Ctx.Serializer.DeserializeJson<DeleteRepositoryRequest>(body);
+            bool recycle = request?.Recycle ?? false;
+
+            try
+            {
+                // Remove from disk first; only touch the database if that succeeds so a failed
+                // delete can be retried. A missing directory is treated as already-deleted.
+                if (Directory.Exists(repo.Path))
+                    Interop.FileOperations.DeleteDirectory(repo.Path, recycle);
+
+                await _Ctx.Selection.DeselectAsync(repo.Path, ctx.Token).ConfigureAwait(false);
+                await _Ctx.Db.Repositories.DeleteAsync(id, ctx.Token).ConfigureAwait(false);
+
+                _Ctx.Logging.Info("[RepositoryRoutes] deleted " + repo.Path + (recycle ? " (recycle bin)" : " (permanent)"));
+                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 200,
+                    new Dictionary<string, object> { { "deleted", true }, { "recycled", recycle } }).ConfigureAwait(false);
+            }
+            catch (NotSupportedException e)
+            {
+                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 400, new ErrorResponse("NotSupported", e.Message)).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                _Ctx.Logging.Warn("[RepositoryRoutes] delete failed for " + repo.Path + ": " + e.Message);
+                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 500, new ErrorResponse("DeleteFailed", e.Message)).ConfigureAwait(false);
             }
         }
 

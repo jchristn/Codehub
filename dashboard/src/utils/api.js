@@ -117,6 +117,13 @@ class ApiClient {
     });
   }
 
+  /** Delete a repository from disk (recycle bin when recycle=true, else permanent) and from CodeHub. */
+  async deleteRepository(id, recycle = false) {
+    return this._request('POST', `/v1.0/api/repositories/${encodeURIComponent(id)}/delete`, {
+      body: { recycle }
+    });
+  }
+
   async getProject(id) {
     return this._request('GET', `/v1.0/api/projects/${encodeURIComponent(id)}`);
   }

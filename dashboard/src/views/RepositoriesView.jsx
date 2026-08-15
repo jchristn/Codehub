@@ -11,6 +11,7 @@ import DirectoryPicker from '../components/DirectoryPicker';
 import AddMultipleModal from '../components/AddMultipleModal';
 import LaunchToolModal from '../components/LaunchToolModal';
 import ColumnPicker from '../components/ColumnPicker';
+import ConfirmModal from '../components/ConfirmModal';
 import useDebounce from '../hooks/useDebounce';
 import { SIGNAL_TYPES, STORAGE, DEFAULT_PAGE_SIZE } from '../utils/constants';
 import { formatRelativeTime, formatDateTime } from '../i18n/formatters';
@@ -65,6 +66,8 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
   const [showPicker, setShowPicker] = useState(false);
   const [showAddMultiple, setShowAddMultiple] = useState(false);
   const [launch, setLaunch] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null); // { repository, recycle }
+  const [deleting, setDeleting] = useState(false);
   const [hiddenColumns, setHiddenColumns] = useState(() => {
     try {
       return new Set(JSON.parse(localStorage.getItem(STORAGE.repoHiddenColumns) || '[]'));
@@ -154,6 +157,21 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
     },
     [apiClient, toast, t]
   );
+
+  const confirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await apiClient.deleteRepository(deleteTarget.repository.id, deleteTarget.recycle);
+      toast.success(t('repositories.deleted', { name: deleteTarget.repository.name }));
+      setDeleteTarget(null);
+      load();
+    } catch (e) {
+      toast.error(e?.body || t('common.error'));
+    } finally {
+      setDeleting(false);
+    }
+  }, [apiClient, deleteTarget, toast, t, load]);
 
   const signalFor = (row, type) => (row.signals || []).find((s) => s.signalType === type);
 
@@ -248,6 +266,16 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
             {
               label: row.repository?.isIncluded ? t('repositories.excludeAction') : t('repositories.includeAction'),
               onClick: () => toggleInclusion(row.repository)
+            },
+            {
+              label: t('repositories.deleteRecycle'),
+              tone: 'danger',
+              onClick: () => setDeleteTarget({ repository: row.repository, recycle: true })
+            },
+            {
+              label: t('repositories.deletePermanent'),
+              tone: 'danger',
+              onClick: () => setDeleteTarget({ repository: row.repository, recycle: false })
             }
           ]}
         />
@@ -456,6 +484,24 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
       {launch && (
         <LaunchToolModal apiClient={apiClient} repository={launch.repository} tool={launch.tool} onClose={() => setLaunch(null)} />
       )}
+
+      <ConfirmModal
+        open={Boolean(deleteTarget)}
+        onCancel={() => !deleting && setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+        busy={deleting}
+        title={
+          deleteTarget?.recycle
+            ? t('repositories.deleteRecycleTitle')
+            : t('repositories.deletePermanentTitle')
+        }
+        confirmLabel={deleteTarget?.recycle ? t('repositories.deleteRecycle') : t('repositories.deletePermanent')}
+        body={
+          deleteTarget?.recycle
+            ? t('repositories.deleteRecycleBody', { name: deleteTarget?.repository?.name, path: deleteTarget?.repository?.path })
+            : t('repositories.deletePermanentBody', { name: deleteTarget?.repository?.name, path: deleteTarget?.repository?.path })
+        }
+      />
     </div>
   );
 }
