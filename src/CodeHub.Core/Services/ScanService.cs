@@ -247,6 +247,13 @@ namespace CodeHub.Core.Services
             GitCollector git = new GitCollector();
             await git.PopulateAsync(repository, discovered.Projects, token).ConfigureAwait(false);
 
+            List<Branch> branches = new List<Branch>();
+            if (repository.IsGitRepository)
+            {
+                branches = await git.GetBranchesAsync(repository.Path, repository.BaseBranch, token).ConfigureAwait(false);
+                repository.BranchCount = branches.Count;
+            }
+
             List<Dependency> dependencies = new List<Dependency>();
             if (_Settings.Scan.DependencyCheck)
             {
@@ -275,6 +282,7 @@ namespace CodeHub.Core.Services
             await _Db.Projects.ReplaceForRepositoryAsync(saved.Id, discovered.Projects, token).ConfigureAwait(false);
             await _Db.Dependencies.ReplaceForRepositoryAsync(saved.Id, dependencies, token).ConfigureAwait(false);
             await _Db.Signals.ReplaceForRepositoryAsync(saved.Id, signals, token).ConfigureAwait(false);
+            await _Db.Branches.ReplaceForRepositoryAsync(saved.Id, branches, token).ConfigureAwait(false);
 
             if (snapshot != null)
             {

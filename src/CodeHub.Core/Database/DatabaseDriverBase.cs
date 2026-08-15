@@ -65,6 +65,11 @@ namespace CodeHub.Core.Database
         /// </summary>
         public ICustomActionMethods CustomActions { get; protected set; }
 
+        /// <summary>
+        /// Branch data access.
+        /// </summary>
+        public IBranchMethods Branches { get; protected set; }
+
         #endregion
 
         #region Public-Methods

@@ -77,5 +77,10 @@ $$ |      $$ |  $$ |$$ |  $$ |$$   ____|$$ |  $$ |$$ |  $$ |$$ |  $$ |
         /// Custom action identifier prefix.
         /// </summary>
         public const string CustomActionPrefix = "act_";
+
+        /// <summary>
+        /// Branch identifier prefix.
+        /// </summary>
+        public const string BranchPrefix = "br_";
     }
 }

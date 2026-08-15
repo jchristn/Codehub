@@ -108,6 +108,15 @@ namespace CodeHub.Core.Helpers
             return Generate(Constants.CustomActionPrefix);
         }
 
+        /// <summary>
+        /// Generate a branch identifier.
+        /// </summary>
+        /// <returns>Branch identifier.</returns>
+        public static string GenerateBranchId()
+        {
+            return Generate(Constants.BranchPrefix);
+        }
+
         #endregion
     }
 }

@@ -136,6 +136,7 @@ const en = {
     colRepository: 'Repository',
     colLanguages: 'Lang',
     colVisibility: 'Visibility',
+    colBranches: 'Branches',
     colVersion: 'Ver',
     colFrameworks: 'Frameworks',
     columns: 'Columns',
@@ -355,6 +356,15 @@ const en = {
     title: 'Page not found',
     message: "The page you're looking for doesn't exist or has moved.",
     back: 'Back to dashboard'
+  },
+  branches: {
+    view: 'View Branches',
+    title: 'Branches',
+    name: 'Branch',
+    ahead: 'Ahead',
+    behind: 'Behind',
+    current: 'current',
+    empty: 'No branches recorded. Rescan this repository to populate them.'
   },
   customActions: {
     title: 'Custom Actions',
@@ -584,6 +594,7 @@ const es = {
     colRepository: 'Repositorio',
     colLanguages: 'Leng.',
     colVisibility: 'Visibilidad',
+    colBranches: 'Ramas',
     colVersion: 'Ver',
     colFrameworks: 'Frameworks',
     columns: 'Columnas',
@@ -795,6 +806,15 @@ const es = {
     message: 'La página que buscas no existe o se ha movido.',
     back: 'Volver al panel'
   },
+  branches: {
+    view: 'Ver ramas',
+    title: 'Ramas',
+    name: 'Rama',
+    ahead: 'Adelante',
+    behind: 'Atrás',
+    current: 'actual',
+    empty: 'No hay ramas registradas. Vuelve a escanear este repositorio para llenarlas.'
+  },
   customActions: {
     title: 'Acciones personalizadas',
     subtitle: 'Define lanzadores de agentes que aparecen en el menú de acciones de cada repositorio.',
@@ -969,6 +989,7 @@ const fr = {
     colRepository: 'Dépôt',
     colLanguages: 'Lang.',
     colVisibility: 'Visibilité',
+    colBranches: 'Branches',
     colVersion: 'Ver',
     colFrameworks: 'Frameworks',
     columns: 'Colonnes',
@@ -1180,6 +1201,15 @@ const fr = {
     message: "La page que vous recherchez n'existe pas ou a été déplacée.",
     back: 'Retour au tableau de bord'
   },
+  branches: {
+    view: 'Voir les branches',
+    title: 'Branches',
+    name: 'Branche',
+    ahead: 'En avance',
+    behind: 'En retard',
+    current: 'actuelle',
+    empty: 'Aucune branche enregistrée. Réanalysez ce dépôt pour les renseigner.'
+  },
   customActions: {
     title: 'Actions personnalisées',
     subtitle: 'Définissez des lanceurs d’agents qui apparaissent dans le menu d’actions de chaque dépôt.',
@@ -1354,6 +1384,7 @@ const de = {
     colRepository: 'Repository',
     colLanguages: 'Spr.',
     colVisibility: 'Sichtbarkeit',
+    colBranches: 'Branches',
     colVersion: 'Ver',
     colFrameworks: 'Frameworks',
     columns: 'Spalten',
@@ -1565,6 +1596,15 @@ const de = {
     message: 'Die gesuchte Seite existiert nicht oder wurde verschoben.',
     back: 'Zurück zum Dashboard'
   },
+  branches: {
+    view: 'Branches anzeigen',
+    title: 'Branches',
+    name: 'Branch',
+    ahead: 'Voraus',
+    behind: 'Zurück',
+    current: 'aktuell',
+    empty: 'Keine Branches erfasst. Scannen Sie dieses Repository erneut, um sie zu füllen.'
+  },
   customActions: {
     title: 'Benutzerdefinierte Aktionen',
     subtitle: 'Definieren Sie Agent-Starter, die im Aktionsmenü jedes Repositorys erscheinen.',
@@ -1739,6 +1779,7 @@ const pt = {
     colRepository: 'Repositório',
     colLanguages: 'Ling.',
     colVisibility: 'Visibilidade',
+    colBranches: 'Ramos',
     colVersion: 'Ver',
     colFrameworks: 'Frameworks',
     columns: 'Colunas',
@@ -1949,6 +1990,15 @@ const pt = {
     title: 'Página não encontrada',
     message: 'A página que você procura não existe ou foi movida.',
     back: 'Voltar ao painel'
+  },
+  branches: {
+    view: 'Ver ramos',
+    title: 'Ramos',
+    name: 'Ramo',
+    ahead: 'À frente',
+    behind: 'Atrás',
+    current: 'atual',
+    empty: 'Nenhum ramo registrado. Reescaneie este repositório para preenchê-los.'
   },
   customActions: {
     title: 'Ações personalizadas',

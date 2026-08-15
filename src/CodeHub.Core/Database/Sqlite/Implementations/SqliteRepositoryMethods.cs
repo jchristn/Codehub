@@ -66,6 +66,7 @@ namespace CodeHub.Core.Database.Sqlite.Implementations
                     "commithash=" + Sanitizer.Quote(repository.LastCommitHash) + ", " +
                     "lastupdateutc=" + Sanitizer.Timestamp(repository.LastUpdateUtc) + ", " +
                     "projectcount=" + repository.ProjectCount + ", " +
+                    "branchcount=" + repository.BranchCount + ", " +
                     "overallhealth=" + Sanitizer.Quote(repository.OverallHealth.ToString()) + ", " +
                     "isincluded=" + Sanitizer.Bool(repository.IsIncluded) + ", " +
                     "lastscannedutc=" + Sanitizer.Timestamp(repository.LastScannedUtc) + " " +
@@ -75,7 +76,7 @@ namespace CodeHub.Core.Database.Sqlite.Implementations
             {
                 batch.Add(
                     "INSERT INTO repositories " +
-                    "(id, path, name, visibility, primarylanguage, currentversion, isgitrepository, remoteurl, currentbranch, basebranch, commitsahead, commitsbehind, commithash, lastupdateutc, projectcount, overallhealth, isincluded, lastscannedutc, createdutc) VALUES (" +
+                    "(id, path, name, visibility, primarylanguage, currentversion, isgitrepository, remoteurl, currentbranch, basebranch, commitsahead, commitsbehind, commithash, lastupdateutc, projectcount, branchcount, overallhealth, isincluded, lastscannedutc, createdutc) VALUES (" +
                     Sanitizer.Quote(repository.Id) + ", " +
                     Sanitizer.Quote(repository.Path) + ", " +
                     Sanitizer.Quote(repository.Name) + ", " +
@@ -91,6 +92,7 @@ namespace CodeHub.Core.Database.Sqlite.Implementations
                     Sanitizer.Quote(repository.LastCommitHash) + ", " +
                     Sanitizer.Timestamp(repository.LastUpdateUtc) + ", " +
                     repository.ProjectCount + ", " +
+                    repository.BranchCount + ", " +
                     Sanitizer.Quote(repository.OverallHealth.ToString()) + ", " +
                     Sanitizer.Bool(repository.IsIncluded) + ", " +
                     Sanitizer.Timestamp(repository.LastScannedUtc) + ", " +
@@ -213,6 +215,7 @@ namespace CodeHub.Core.Database.Sqlite.Implementations
                 LastCommitHash = row.GetString("commithash"),
                 LastUpdateUtc = row.GetDateTime("lastupdateutc"),
                 ProjectCount = row.GetInt("projectcount"),
+                BranchCount = row.GetInt("branchcount"),
                 OverallHealth = row.GetEnum("overallhealth", HealthStatusEnum.Unknown),
                 IsIncluded = row.GetBool("isincluded", true),
                 LastScannedUtc = row.GetDateTime("lastscannedutc"),

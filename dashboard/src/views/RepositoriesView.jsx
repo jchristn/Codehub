@@ -13,6 +13,7 @@ import LaunchToolModal from '../components/LaunchToolModal';
 import ColumnPicker from '../components/ColumnPicker';
 import ConfirmModal from '../components/ConfirmModal';
 import InvokeCustomActionModal from '../components/InvokeCustomActionModal';
+import BranchesModal from '../components/BranchesModal';
 import useDebounce from '../hooks/useDebounce';
 import { SIGNAL_TYPES, STORAGE, DEFAULT_PAGE_SIZE, AUTO_REFRESH_OPTIONS, DEFAULT_AUTO_REFRESH } from '../utils/constants';
 import { formatRelativeTime, formatDateTime } from '../i18n/formatters';
@@ -73,6 +74,7 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
   const [archiving, setArchiving] = useState(false);
   const [customActions, setCustomActions] = useState([]);
   const [invoke, setInvoke] = useState(null); // { repository, action }
+  const [branchesRepo, setBranchesRepo] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(() => {
     const v = localStorage.getItem(STORAGE.repoAutoRefresh);
     return v !== null && v !== '' ? Number(v) : DEFAULT_AUTO_REFRESH;
@@ -328,6 +330,7 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
         <ActionMenu
           items={[
             { label: t('common.viewDetails'), onClick: () => setSelectedId(row.repository?.id) },
+            { label: t('branches.view'), onClick: () => setBranchesRepo(row.repository) },
             { label: t('repositories.rescanNow'), onClick: () => rescanRepo(row.repository) },
             {
               label: t('actions.openGithub'),
@@ -440,6 +443,13 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
           </span>
         );
       }
+    },
+    {
+      key: 'branches',
+      label: t('repositories.colBranches'),
+      sortKey: 'branchcount',
+      className: 'cell-center cell-nowrap',
+      render: (row) => row.repository?.branchCount ?? 0
     },
     {
       key: 'aheadBehind',
@@ -610,6 +620,10 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
           action={invoke.action}
           onClose={() => setInvoke(null)}
         />
+      )}
+
+      {branchesRepo && (
+        <BranchesModal apiClient={apiClient} repository={branchesRepo} onClose={() => setBranchesRepo(null)} />
       )}
 
       <ConfirmModal

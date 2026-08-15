@@ -27,7 +27,8 @@ namespace CodeHub.Core.Database.Sqlite.Queries
                     GitHubSnapshots,
                     ScanSelections,
                     RequestHistory,
-                    CustomActions
+                    CustomActions,
+                    Branches
                 };
             }
         }
@@ -52,6 +53,7 @@ CREATE TABLE IF NOT EXISTS repositories (
     commithash TEXT,
     lastupdateutc TEXT,
     projectcount INTEGER NOT NULL DEFAULT 0,
+    branchcount INTEGER NOT NULL DEFAULT 0,
     overallhealth TEXT NOT NULL DEFAULT 'Unknown',
     isincluded INTEGER NOT NULL DEFAULT 1,
     lastscannedutc TEXT,
@@ -198,6 +200,22 @@ CREATE TABLE IF NOT EXISTS custom_actions (
     prompt TEXT,
     createdutc TEXT NOT NULL
 );
+";
+
+        /// <summary>
+        /// Branches table (local branches and their divergence from the base branch, per scan).
+        /// </summary>
+        public static readonly string Branches = @"
+CREATE TABLE IF NOT EXISTS branches (
+    id TEXT PRIMARY KEY,
+    repoid TEXT NOT NULL,
+    name TEXT NOT NULL,
+    iscurrent INTEGER NOT NULL DEFAULT 0,
+    ahead INTEGER NOT NULL DEFAULT 0,
+    behind INTEGER NOT NULL DEFAULT 0,
+    createdutc TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_branches_repoid ON branches(repoid);
 ";
 
         /// <summary>

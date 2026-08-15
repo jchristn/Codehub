@@ -47,6 +47,7 @@ namespace CodeHub.Server.Routes
             server.Routes.PostAuthentication.Static.Add(HttpMethod.GET, "/v1.0/api/repositories", ListAsync);
             server.Routes.PostAuthentication.Static.Add(HttpMethod.GET, "/v1.0/api/overview", OverviewAsync);
             server.Routes.PostAuthentication.Parameter.Add(HttpMethod.GET, "/v1.0/api/repositories/{id}", DetailAsync);
+            server.Routes.PostAuthentication.Parameter.Add(HttpMethod.GET, "/v1.0/api/repositories/{id}/branches", BranchesAsync);
             server.Routes.PostAuthentication.Parameter.Add(HttpMethod.POST, "/v1.0/api/repositories/{id}/include", IncludeAsync);
             server.Routes.PostAuthentication.Parameter.Add(HttpMethod.POST, "/v1.0/api/repositories/{id}/exclude", ExcludeAsync);
             server.Routes.PostAuthentication.Parameter.Add(HttpMethod.POST, "/v1.0/api/repositories/{id}/open", OpenAsync);
@@ -255,6 +256,20 @@ namespace CodeHub.Server.Routes
             }
         }
 
+        private async Task BranchesAsync(HttpContextBase ctx)
+        {
+            string id = ctx.Request.Url.Parameters["id"];
+            Repository repo = await _Ctx.Db.Repositories.ReadAsync(id, ctx.Token).ConfigureAwait(false);
+            if (repo == null)
+            {
+                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 404, new ErrorResponse("NotFound", "Repository not found.")).ConfigureAwait(false);
+                return;
+            }
+
+            List<Branch> branches = await _Ctx.Db.Branches.EnumerateByRepositoryAsync(id, ctx.Token).ConfigureAwait(false);
+            await RouteHelper.SendJson(ctx, _Ctx.Serializer, 200, branches).ConfigureAwait(false);
+        }
+
         private async Task RunAgentAsync(HttpContextBase ctx)
         {
             string id = ctx.Request.Url.Parameters["id"];
@@ -452,6 +467,7 @@ namespace CodeHub.Server.Routes
                 case "behind": return ApplyInt(repos, r => r.CommitsBehind, desc);
                 case "divergence": return ApplyInt(repos, r => r.CommitsAhead + r.CommitsBehind, desc);
                 case "projectcount": return ApplyInt(repos, r => r.ProjectCount, desc);
+                case "branchcount": return ApplyInt(repos, r => r.BranchCount, desc);
                 case "lastupdate": return ApplyDate(repos, r => r.LastUpdateUtc, desc);
                 case "lastscanned": return ApplyDate(repos, r => r.LastScannedUtc, desc);
                 case "overall": return ApplyInt(repos, r => HealthRank(r.OverallHealth), desc);

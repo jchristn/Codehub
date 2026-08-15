@@ -105,6 +105,11 @@ namespace CodeHub.Core.Models
         public int ProjectCount { get; set; } = 0;
 
         /// <summary>
+        /// Number of local branches in the repository.
+        /// </summary>
+        public int BranchCount { get; set; } = 0;
+
+        /// <summary>
         /// Rolled-up overall health.
         /// </summary>
         public HealthStatusEnum OverallHealth { get; set; } = HealthStatusEnum.Unknown;

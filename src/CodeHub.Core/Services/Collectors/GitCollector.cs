@@ -112,6 +112,54 @@ namespace CodeHub.Core.Services.Collectors
             }
         }
 
+        /// <summary>
+        /// Enumerate local branches and each branch's divergence (ahead/behind) from the base branch.
+        /// </summary>
+        /// <param name="repoPath">Repository path.</param>
+        /// <param name="baseRef">Base ref to compare against; resolved automatically when null.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>Branches with ahead/behind counts.</returns>
+        public async Task<List<Branch>> GetBranchesAsync(string repoPath, string baseRef, CancellationToken token = default)
+        {
+            List<Branch> branches = new List<Branch>();
+
+            ProcessResult list = await ProcessRunner.RunAsync(
+                "git", "for-each-ref --format=%(refname:short) refs/heads", repoPath, TimeoutMs, token).ConfigureAwait(false);
+            if (!list.Success) return branches;
+
+            string current = null;
+            ProcessResult head = await ProcessRunner.RunAsync(
+                "git", "rev-parse --abbrev-ref HEAD", repoPath, TimeoutMs, token).ConfigureAwait(false);
+            if (head.Success) current = head.StandardOutput.Trim();
+
+            if (String.IsNullOrEmpty(baseRef))
+                baseRef = await ResolveBaseRefAsync(repoPath, token).ConfigureAwait(false);
+
+            foreach (string raw in list.StandardOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                string name = raw.Trim();
+                if (String.IsNullOrEmpty(name)) continue;
+
+                Branch b = new Branch { Name = name, IsCurrent = String.Equals(name, current, StringComparison.Ordinal) };
+                if (!String.IsNullOrEmpty(baseRef))
+                {
+                    ProcessResult counts = await ProcessRunner.RunAsync(
+                        "git", "rev-list --left-right --count " + baseRef + "..." + name, repoPath, TimeoutMs, token).ConfigureAwait(false);
+                    if (counts.Success)
+                    {
+                        string[] parts = counts.StandardOutput.Trim().Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length == 2)
+                        {
+                            if (Int32.TryParse(parts[0], out int behind)) b.Behind = behind;
+                            if (Int32.TryParse(parts[1], out int ahead)) b.Ahead = ahead;
+                        }
+                    }
+                }
+                branches.Add(b);
+            }
+            return branches;
+        }
+
         private static async Task<string> ResolveBaseRefAsync(string path, CancellationToken token)
         {
             string[] candidates = new[] { "origin/main", "origin/master", "main", "master" };

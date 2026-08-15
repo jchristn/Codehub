@@ -103,6 +103,11 @@ class ApiClient {
     return this._request('GET', `/v1.0/api/repositories/${encodeURIComponent(id)}`);
   }
 
+  /** List a repository's branches with ahead/behind (captured on the last scan). */
+  async getBranches(id) {
+    return this._request('GET', `/v1.0/api/repositories/${encodeURIComponent(id)}/branches`);
+  }
+
   async includeRepository(id) {
     return this._request('POST', `/v1.0/api/repositories/${encodeURIComponent(id)}/include`);
   }
