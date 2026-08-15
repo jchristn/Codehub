@@ -1,0 +1,6 @@
+/* App-level layout hooks. Most styling lives in index.css alongside the
+   design tokens so themes stay consistent across the app. */
+
+#root {
+  isolation: isolate;
+}

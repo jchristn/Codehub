@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="CodeHub.Core/CodeHub.Core.csproj" />
+  <Project Path="CodeHub.Server/CodeHub.Server.csproj" />
+  <Project Path="Test.Automated/Test.Automated.csproj" />
+  <Project Path="Test.Shared/Test.Shared.csproj" />
+</Solution>

@@ -1,0 +1,103 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <AssemblyName>CodeHub.Server</AssemblyName>
+    <RootNamespace>CodeHub.Server</RootNamespace>
+    <StartupObject>CodeHub.Server.Program</StartupObject>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <!-- Package / assembly metadata -->
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <Product>CodeHub</Product>
+    <Title>CodeHub Server</Title>
+    <Authors>Joel Christner</Authors>
+    <Company>Joel Christner</Company>
+    <Description>Local, single-operator console that inventories every repository under a code tree and scores each on health signals — tests, telemetry, outdated dependencies, CVEs/Dependabot, and open issues/PRs — with a birds-eye dashboard served at /dashboard.</Description>
+    <Copyright>Copyright (c) 2026 Joel Christner</Copyright>
+    <PackageProjectUrl>https://github.com/jchristn/codehub</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/jchristn/codehub</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <PackageTags>repository;health;dashboard;devtools;monitoring;git;nuget;dependencies;cve;dependabot</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Watson" Version="7.0.14" />
+    <PackageReference Include="SyslogLogging" Version="2.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CodeHub.Core\CodeHub.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="codehub.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" Condition="Exists('..\..\README.md')" />
+    <None Include="..\..\LICENSE.md" Pack="true" PackagePath="\" Condition="Exists('..\..\LICENSE.md')" />
+  </ItemGroup>
+
+  <!-- ============================================================
+       Build the React dashboard as part of the solution build.
+       Incremental: only runs when dashboard sources change or the
+       build output is missing. Set -p:SkipDashboard=true to skip
+       (e.g. on a machine without Node.js).
+       ============================================================ -->
+  <PropertyGroup>
+    <DashboardDir>$(MSBuildProjectDirectory)\..\..\dashboard</DashboardDir>
+    <DashboardDist>$(DashboardDir)\dist</DashboardDist>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <DashboardInputs Include="$(DashboardDir)\src\**\*.*" />
+    <DashboardInputs Include="$(DashboardDir)\public\**\*.*" />
+    <DashboardInputs Include="$(DashboardDir)\index.html" />
+    <DashboardInputs Include="$(DashboardDir)\package.json" />
+    <DashboardInputs Include="$(DashboardDir)\vite.config.js" />
+  </ItemGroup>
+
+  <Target Name="BuildDashboard"
+          BeforeTargets="BeforeBuild"
+          Condition="'$(SkipDashboard)' != 'true' And Exists('$(DashboardDir)\package.json')"
+          Inputs="@(DashboardInputs)"
+          Outputs="$(DashboardDist)\index.html">
+    <Message Importance="high" Text="CodeHub: building dashboard (npm) — this runs only when dashboard sources change." />
+    <Exec Command="npm install" WorkingDirectory="$(DashboardDir)" Condition="!Exists('$(DashboardDir)\node_modules')" />
+    <Exec Command="npm run build" WorkingDirectory="$(DashboardDir)" />
+  </Target>
+
+  <Target Name="CopyDashboardToOutput"
+          AfterTargets="Build"
+          Condition="Exists('$(DashboardDist)\index.html')">
+    <ItemGroup>
+      <DashboardDistFiles Include="$(DashboardDist)\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(DashboardDistFiles)"
+          DestinationFiles="@(DashboardDistFiles->'$(OutDir)dashboard\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="CopyDashboardToPublish"
+          AfterTargets="Publish"
+          Condition="Exists('$(DashboardDist)\index.html')">
+    <ItemGroup>
+      <DashboardPublishFiles Include="$(DashboardDist)\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(DashboardPublishFiles)"
+          DestinationFiles="@(DashboardPublishFiles->'$(PublishDir)dashboard\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>
