@@ -704,6 +704,9 @@ button.tiny,
 }
 .data-table {
   width: 100%;
+  /* Take natural column widths and let .data-table-scroll scroll horizontally
+     when there are more columns than fit, instead of squishing them. */
+  min-width: max-content;
   border-collapse: collapse;
   font-size: var(--font-size-sm);
 }

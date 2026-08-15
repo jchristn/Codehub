@@ -408,6 +408,15 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
       )
     },
     {
+      key: 'scanned',
+      label: t('repositories.colScanned'),
+      sortKey: 'lastscanned',
+      className: 'cell-nowrap',
+      render: (row) => (
+        <span title={formatDateTime(row.repository?.lastScannedUtc)}>{formatRelativeTime(row.repository?.lastScannedUtc)}</span>
+      )
+    },
+    {
       key: 'archived',
       label: t('repositories.colArchived'),
       sortKey: 'archived',

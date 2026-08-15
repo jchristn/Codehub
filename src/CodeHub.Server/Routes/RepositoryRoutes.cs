@@ -413,6 +413,7 @@ namespace CodeHub.Server.Routes
                 case "divergence": return ApplyInt(repos, r => r.CommitsAhead + r.CommitsBehind, desc);
                 case "projectcount": return ApplyInt(repos, r => r.ProjectCount, desc);
                 case "lastupdate": return ApplyDate(repos, r => r.LastUpdateUtc, desc);
+                case "lastscanned": return ApplyDate(repos, r => r.LastScannedUtc, desc);
                 case "overall": return ApplyInt(repos, r => HealthRank(r.OverallHealth), desc);
                 case "testinfra": return ApplyInt(repos, r => SignalRank(signalsByRepo, r.Id, SignalTypeEnum.TestInfra), desc);
                 case "telemetry": return ApplyInt(repos, r => SignalRank(signalsByRepo, r.Id, SignalTypeEnum.Telemetry), desc);
