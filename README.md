@@ -85,13 +85,33 @@ have checked out.
 You need the [.NET 10 SDK](https://dotnet.microsoft.com/download) and
 [Node.js](https://nodejs.org/) (the dashboard is built automatically during the .NET build).
 
+### The really simple way
+
+Clone it and run the launcher script — that's the whole thing:
+
 ```bash
 git clone https://github.com/jchristn/codehub.git
+cd codehub
+./go.sh        # macOS / Linux
+go.bat         # Windows
+```
+
+It builds the dashboard and backend, then starts the server on the standard port. Once it's up open:
+
+```
+http://127.0.0.1:8090/dashboard
+```
+
+### The manual way
+
+If you'd rather drive it yourself:
+
+```bash
 cd codehub/src
 dotnet run --project CodeHub.Server
 ```
 
-That's it. The build compiles the React dashboard and the backend serves it, so once it's up open:
+The build compiles the React dashboard and the backend serves it, so once it's up open the same URL:
 
 ```
 http://127.0.0.1:8090/dashboard
