@@ -335,6 +335,11 @@ const en = {
     emptyDir: 'No subdirectories.',
     noRoots: 'No root directories are configured.'
   },
+  notFound: {
+    title: 'Page not found',
+    message: "The page you're looking for doesn't exist or has moved.",
+    back: 'Back to dashboard'
+  },
   addMultiple: {
     launch: 'Add multiple',
     title: 'Add multiple directories',
@@ -727,6 +732,11 @@ const es = {
     emptyDir: 'Sin subdirectorios.',
     noRoots: 'No hay directorios raíz configurados.'
   },
+  notFound: {
+    title: 'Página no encontrada',
+    message: 'La página que buscas no existe o se ha movido.',
+    back: 'Volver al panel'
+  },
   addMultiple: {
     launch: 'Agregar varios',
     title: 'Agregar varios directorios',
@@ -1068,6 +1078,11 @@ const fr = {
     excluded: 'exclu',
     emptyDir: 'Aucun sous-répertoire.',
     noRoots: 'Aucun répertoire racine configuré.'
+  },
+  notFound: {
+    title: 'Page introuvable',
+    message: "La page que vous recherchez n'existe pas ou a été déplacée.",
+    back: 'Retour au tableau de bord'
   },
   addMultiple: {
     launch: 'Ajouter plusieurs',
@@ -1411,6 +1426,11 @@ const de = {
     emptyDir: 'Keine Unterverzeichnisse.',
     noRoots: 'Keine Stammverzeichnisse konfiguriert.'
   },
+  notFound: {
+    title: 'Seite nicht gefunden',
+    message: 'Die gesuchte Seite existiert nicht oder wurde verschoben.',
+    back: 'Zurück zum Dashboard'
+  },
   addMultiple: {
     launch: 'Mehrere hinzufügen',
     title: 'Mehrere Verzeichnisse hinzufügen',
@@ -1752,6 +1772,11 @@ const pt = {
     excluded: 'excluído',
     emptyDir: 'Sem subdiretórios.',
     noRoots: 'Nenhum diretório raiz configurado.'
+  },
+  notFound: {
+    title: 'Página não encontrada',
+    message: 'A página que você procura não existe ou foi movida.',
+    back: 'Voltar ao painel'
   },
   addMultiple: {
     launch: 'Adicionar vários',

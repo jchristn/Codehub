@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
+import NotFound from './views/NotFound';
 import './App.css';
 
 /**
@@ -34,7 +35,7 @@ function PublicRoute({ children }) {
       </div>
     );
   }
-  return !isAuthenticated ? children : <Navigate to="/dashboard/home" replace />;
+  return !isAuthenticated ? children : <Navigate to="/home" replace />;
 }
 
 function AppRoutes() {
@@ -49,18 +50,14 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/dashboard"
-        element={<Navigate to="/dashboard/home" replace />}
-      />
-      <Route
-        path="/dashboard/:section"
+        path="/:section"
         element={
           <PrivateRoute>
             <Dashboard />
           </PrivateRoute>
         }
       />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

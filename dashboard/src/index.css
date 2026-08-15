@@ -1221,6 +1221,27 @@ button.tiny,
 .picker-hint { color: var(--color-text-muted); font-size: var(--font-size-xs); }
 .picker-actions { display: flex; gap: var(--spacing-sm); }
 
+/* -------------------------------------------------- 404 / not found */
+.notfound {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: var(--spacing-xl);
+  text-align: center;
+}
+.notfound-card { max-width: 460px; }
+.notfound-code {
+  font-size: 5rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--color-primary);
+}
+.notfound-title { font-size: var(--font-size-xl); font-weight: 700; margin-top: var(--spacing-md); }
+.notfound-message { color: var(--color-text-secondary); margin-top: var(--spacing-sm); }
+.notfound-link { display: inline-block; margin-top: var(--spacing-lg); text-decoration: none; }
+
 /* -------------------------------------------------- Add-multiple paste modal */
 .add-multiple-body { display: flex; flex-direction: column; }
 .add-multiple-textarea {

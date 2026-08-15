@@ -13,6 +13,7 @@ import ScansView from '../views/ScansView';
 import RequestHistoryView from '../views/RequestHistoryView';
 import ApiExplorerView from '../views/ApiExplorerView';
 import SettingsView from '../views/SettingsView';
+import NotFound from '../views/NotFound';
 
 /**
  * Authenticated app shell: persistent sidebar + topbar + scrollable workspace.
@@ -90,7 +91,7 @@ function Dashboard() {
       case 'settings':
         return <SettingsView apiClient={apiClient} settings={settings} />;
       default:
-        return <HomeView {...shared} overview={overview} onRefreshOverview={loadOverview} />;
+        return <NotFound />;
     }
   };
 

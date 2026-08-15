@@ -49,7 +49,7 @@ function Sidebar({ collapsed, version }) {
             {group.items.map((item) => (
               <NavLink
                 key={item.id}
-                to={`/dashboard/${item.id}`}
+                to={`/${item.id}`}
                 className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
                 title={t(item.labelKey)}
               >

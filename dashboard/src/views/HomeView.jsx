@@ -16,7 +16,7 @@ function HomeView({ overview, onRefreshOverview, onScanNow, isScanning, lastScan
 
   const goToRepos = (params = {}) => {
     const search = new URLSearchParams(params).toString();
-    navigate(`/dashboard/repositories${search ? `?${search}` : ''}`);
+    navigate(`/repositories${search ? `?${search}` : ''}`);
   };
 
   const kpis = [
