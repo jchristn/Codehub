@@ -27,6 +27,7 @@ function CustomActionModal({ action, onSave, onClose, busy }) {
       onClose={onClose}
       title={action ? t('customActions.editTitle') : t('customActions.newTitle')}
       size="md"
+      className="ca-modal-lg"
       footer={
         <>
           <button type="button" className="button-secondary" onClick={onClose} disabled={busy}>

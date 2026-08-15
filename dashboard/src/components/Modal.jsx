@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
  *
  * @param {('sm'|'md'|'lg'|'xl')} size
  */
-function Modal({ open, onClose, title, subtitle, headerExtra, children, footer, size = 'md' }) {
+function Modal({ open, onClose, title, subtitle, headerExtra, children, footer, size = 'md', className = '' }) {
   const { t } = useTranslation();
   const panelRef = useRef(null);
   const previousFocus = useRef(null);
@@ -68,7 +68,7 @@ function Modal({ open, onClose, title, subtitle, headerExtra, children, footer, 
       }}
     >
       <div
-        className={`modal-panel size-${size}`}
+        className={`modal-panel size-${size} ${className}`.trim()}
         role="dialog"
         aria-modal="true"
         aria-label={typeof title === 'string' ? title : undefined}

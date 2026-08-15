@@ -185,6 +185,19 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
     }
   }, [apiClient, deleteTarget, toast, t, load]);
 
+  const rescanRepo = useCallback(
+    async (repo) => {
+      try {
+        await apiClient.startScan(repo.id);
+        toast.info(t('repositories.rescanStarted', { name: repo.name }));
+      } catch (e) {
+        if (e?.status === 409) toast.warning(t('common.scanning'));
+        else toast.error(t('common.error'));
+      }
+    },
+    [apiClient, toast, t]
+  );
+
   const signalFor = (row, type) => (row.signals || []).find((s) => s.signalType === type);
 
   // Filter-control factories (read/write the live filter state).
@@ -261,6 +274,7 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
         <ActionMenu
           items={[
             { label: t('common.viewDetails'), onClick: () => setSelectedId(row.repository?.id) },
+            { label: t('repositories.rescanNow'), onClick: () => rescanRepo(row.repository) },
             {
               label: t('actions.openGithub'),
               disabled: !githubWebUrl(row.repository),

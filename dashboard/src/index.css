@@ -1049,6 +1049,11 @@ button.tiny,
 }
 
 /* -------------------------------------------------- Custom actions */
+/* Create/edit modal: 50% wider than size-md (640 -> 960) and taller. */
+.modal-panel.ca-modal-lg { max-width: 960px; }
+.modal-panel.ca-modal-lg .modal-body { min-height: 60vh; display: flex; flex-direction: column; }
+.modal-panel.ca-modal-lg .ca-form { flex: 1; }
+.modal-panel.ca-modal-lg .ca-prompt { flex: 1; min-height: 16rem; }
 .ca-form { display: flex; flex-direction: column; gap: var(--spacing-md); }
 .ca-field { display: flex; flex-direction: column; gap: 0.35rem; }
 .ca-label { font-size: var(--font-size-sm); font-weight: 600; color: var(--color-text-secondary); }
