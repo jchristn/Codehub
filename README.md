@@ -47,6 +47,24 @@ Alongside those it surfaces the current version, branch, commits ahead/behind `m
 date, and languages — then rolls it all into one overall grade so you can sort the whole tree by
 "most neglected" and start at the top.
 
+## Screenshots
+
+<details>
+<summary>Click to expand screenshots</summary>
+
+<p align="center"><img src="assets/ss1.png" alt="CodeHub screenshot 1" width="100%" /></p>
+<p align="center"><img src="assets/ss2.png" alt="CodeHub screenshot 2" width="100%" /></p>
+<p align="center"><img src="assets/ss3.png" alt="CodeHub screenshot 3" width="100%" /></p>
+<p align="center"><img src="assets/ss4.png" alt="CodeHub screenshot 4" width="100%" /></p>
+<p align="center"><img src="assets/ss5.png" alt="CodeHub screenshot 5" width="100%" /></p>
+<p align="center"><img src="assets/ss6.png" alt="CodeHub screenshot 6" width="100%" /></p>
+<p align="center"><img src="assets/ss7.png" alt="CodeHub screenshot 7" width="100%" /></p>
+<p align="center"><img src="assets/ss8.png" alt="CodeHub screenshot 8" width="100%" /></p>
+<p align="center"><img src="assets/ss9.png" alt="CodeHub screenshot 9" width="100%" /></p>
+<p align="center"><img src="assets/ss10.png" alt="CodeHub screenshot 10" width="100%" /></p>
+
+</details>
+
 ## Features
 
 - **One row per repository, filter every column.** Text filters for name/version/branch, dropdowns
