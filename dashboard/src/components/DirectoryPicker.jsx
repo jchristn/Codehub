@@ -5,6 +5,30 @@ import { useToast } from '../context/ToastContext';
 
 const ROOT_KEY = '__root__';
 
+// --- Client-side selection-state computation -------------------------------
+// Mirrors SelectionService.StateFor on the server so a single toggle needs only
+// the include/exclude sets, not a re-browse of every loaded tree level.
+
+function normPath(p) {
+  return p ? p.replace(/[\\/]+$/, '') : '';
+}
+function pathEquals(a, b) {
+  return normPath(a).toLowerCase() === normPath(b).toLowerCase();
+}
+function isStrictlyUnder(child, parent) {
+  const c = normPath(child).toLowerCase();
+  const p = normPath(parent).toLowerCase();
+  if (!c || !p || c === p) return false;
+  return c.startsWith(`${p}\\`) || c.startsWith(`${p}/`);
+}
+function computeState(path, sets) {
+  const p = normPath(path);
+  if (sets.excluded.some((e) => pathEquals(p, e) || isStrictlyUnder(p, e))) return 'Excluded';
+  if (sets.included.some((i) => pathEquals(p, i) || isStrictlyUnder(p, i))) return 'Selected';
+  if (sets.included.some((i) => isStrictlyUnder(i, p))) return 'Partial';
+  return 'None';
+}
+
 /**
  * Tri-state checkbox that reflects selected / partial / excluded / none.
  */
@@ -35,10 +59,12 @@ function DirectoryPicker({ apiClient, onClose, onChanged }) {
   const { t } = useTranslation();
   const toast = useToast();
 
-  // path -> node ({ name, path, isGitRepository, hasSubdirectories, state })
+  // path -> node ({ name, path, isGitRepository, hasSubdirectories })
   const [nodes, setNodes] = useState({});
   // parent path (or ROOT_KEY) -> array of child paths
   const [children, setChildren] = useState({});
+  // Current include/exclude sets; node tri-state is derived from these client-side.
+  const [sets, setSets] = useState({ included: [], excluded: [] });
   const [expanded, setExpanded] = useState(new Set());
   const [loading, setLoading] = useState(new Set());
   const [error, setError] = useState(null);
@@ -73,15 +99,25 @@ function DirectoryPicker({ apiClient, onClose, onChanged }) {
     [apiClient, t]
   );
 
+  // Fetch the include/exclude sets once; tri-state for every node is derived from these.
+  const loadSelections = useCallback(async () => {
+    try {
+      const list = (await apiClient.getSelection()) || [];
+      const next = { included: [], excluded: [] };
+      list.forEach((s) => {
+        if (s.included) next.included.push(s.path);
+        else next.excluded.push(s.path);
+      });
+      setSets(next);
+    } catch {
+      setError(t('common.error'));
+    }
+  }, [apiClient, t]);
+
   useEffect(() => {
     load(null);
-  }, [load]);
-
-  // Re-fetch every currently-loaded level so states (selected/partial/excluded) stay correct.
-  const refreshLoaded = useCallback(async () => {
-    const keys = Object.keys(children);
-    await Promise.all(keys.map((k) => load(k === ROOT_KEY ? null : k)));
-  }, [children, load]);
+    loadSelections();
+  }, [load, loadSelections]);
 
   const toggleExpand = useCallback(
     (node) => {
@@ -102,18 +138,19 @@ function DirectoryPicker({ apiClient, onClose, onChanged }) {
 
   const toggleSelect = useCallback(
     async (node) => {
+      const currentState = computeState(node.path, sets);
       setBusy(true);
       try {
-        await apiClient.setSelection(node.path, node.state !== 'Selected');
+        await apiClient.setSelection(node.path, currentState !== 'Selected');
         setDirty(true);
-        await refreshLoaded();
+        await loadSelections();
       } catch {
         toast.error(t('common.error'));
       } finally {
         setBusy(false);
       }
     },
-    [apiClient, refreshLoaded, toast, t]
+    [apiClient, sets, loadSelections, toast, t]
   );
 
   const handleClose = useCallback(() => {
@@ -137,6 +174,7 @@ function DirectoryPicker({ apiClient, onClose, onChanged }) {
     const isOpen = expanded.has(path);
     const kids = children[path];
     const isLoading = loading.has(path);
+    const state = computeState(node.path, sets);
     return (
       <div key={path} className="dir-node-wrap">
         <div className="dir-node" style={{ paddingLeft: `${depth * 18 + 4}px` }}>
@@ -149,12 +187,12 @@ function DirectoryPicker({ apiClient, onClose, onChanged }) {
           >
             {node.hasSubdirectories ? (isOpen ? '▾' : '▸') : ''}
           </button>
-          <TriCheckbox state={node.state} onToggle={() => toggleSelect(node)} />
+          <TriCheckbox state={state} onToggle={() => toggleSelect(node)} />
           <span className="dir-name" onClick={() => toggleExpand(node)}>
             {node.name}
           </span>
           {node.isGitRepository && <span className="dir-git-badge">git</span>}
-          {node.state === 'Excluded' && <span className="dir-excluded-tag">{t('picker.excluded')}</span>}
+          {state === 'Excluded' && <span className="dir-excluded-tag">{t('picker.excluded')}</span>}
         </div>
         {isOpen && (
           <div className="dir-children">
