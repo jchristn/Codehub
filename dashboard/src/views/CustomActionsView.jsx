@@ -63,19 +63,6 @@ function CustomActionsView({ apiClient }) {
   };
 
   const columns = [
-    { key: 'name', label: t('customActions.name'), render: (row) => <span className="repo-name">{row.name}</span> },
-    { key: 'agent', label: t('customActions.agent'), render: (row) => agentLabel(row.agent) },
-    {
-      key: 'dangerous',
-      label: t('customActions.dangerous'),
-      className: 'cell-center',
-      render: (row) => (row.dangerous ? t('common.yes') : t('common.no'))
-    },
-    {
-      key: 'prompt',
-      label: t('customActions.prompt'),
-      render: (row) => <span className="ca-prompt-preview" title={row.prompt}>{row.prompt || '—'}</span>
-    },
     {
       key: 'actions',
       label: t('common.actions'),
@@ -88,6 +75,19 @@ function CustomActionsView({ apiClient }) {
           ]}
         />
       )
+    },
+    { key: 'name', label: t('customActions.name'), render: (row) => <span className="repo-name">{row.name}</span> },
+    { key: 'agent', label: t('customActions.agent'), render: (row) => agentLabel(row.agent) },
+    {
+      key: 'dangerous',
+      label: t('customActions.dangerous'),
+      className: 'cell-center',
+      render: (row) => (row.dangerous ? t('common.yes') : t('common.no'))
+    },
+    {
+      key: 'prompt',
+      label: t('customActions.prompt'),
+      render: (row) => <span className="ca-prompt-preview" title={row.prompt}>{row.prompt || '—'}</span>
     }
   ];
 
@@ -107,6 +107,7 @@ function CustomActionsView({ apiClient }) {
         columns={columns}
         rows={actions}
         rowKey={(row) => row.id}
+        onRowClick={(row) => setEditing(row)}
         loading={loading}
         error={error}
         emptyMessage={t('customActions.empty')}
