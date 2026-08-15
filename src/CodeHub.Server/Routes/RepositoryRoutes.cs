@@ -50,6 +50,7 @@ namespace CodeHub.Server.Routes
             server.Routes.PostAuthentication.Parameter.Add(HttpMethod.POST, "/v1.0/api/repositories/{id}/include", IncludeAsync);
             server.Routes.PostAuthentication.Parameter.Add(HttpMethod.POST, "/v1.0/api/repositories/{id}/exclude", ExcludeAsync);
             server.Routes.PostAuthentication.Parameter.Add(HttpMethod.POST, "/v1.0/api/repositories/{id}/open", OpenAsync);
+            server.Routes.PostAuthentication.Parameter.Add(HttpMethod.POST, "/v1.0/api/repositories/{id}/run-agent", RunAgentAsync);
             server.Routes.PostAuthentication.Parameter.Add(HttpMethod.POST, "/v1.0/api/repositories/{id}/delete", DeleteRepoAsync);
         }
 
@@ -249,6 +250,41 @@ namespace CodeHub.Server.Routes
             catch (Exception e)
             {
                 _Ctx.Logging.Warn("[RepositoryRoutes] open failed: " + e.Message);
+                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 500, new ErrorResponse("LaunchFailed", e.Message)).ConfigureAwait(false);
+            }
+        }
+
+        private async Task RunAgentAsync(HttpContextBase ctx)
+        {
+            string id = ctx.Request.Url.Parameters["id"];
+            Repository repo = await _Ctx.Db.Repositories.ReadAsync(id, ctx.Token).ConfigureAwait(false);
+            if (repo == null)
+            {
+                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 404, new ErrorResponse("NotFound", "Repository not found.")).ConfigureAwait(false);
+                return;
+            }
+
+            string body = ctx.Request.DataAsString;
+            RunAgentRequest request = String.IsNullOrEmpty(body) ? null : _Ctx.Serializer.DeserializeJson<RunAgentRequest>(body);
+            if (request == null || String.IsNullOrEmpty(request.Agent))
+            {
+                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 400, new ErrorResponse("BadRequest", "An agent is required.")).ConfigureAwait(false);
+                return;
+            }
+
+            try
+            {
+                _Ctx.Launcher.OpenAgentPrompt(request.Agent, repo.Path, request.Dangerous, request.Prompt);
+                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 200,
+                    new Dictionary<string, object> { { "launched", true }, { "agent", request.Agent } }).ConfigureAwait(false);
+            }
+            catch (NotSupportedException e)
+            {
+                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 400, new ErrorResponse("NotSupported", e.Message)).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                _Ctx.Logging.Warn("[RepositoryRoutes] run-agent failed: " + e.Message);
                 await RouteHelper.SendJson(ctx, _Ctx.Serializer, 500, new ErrorResponse("LaunchFailed", e.Message)).ConfigureAwait(false);
             }
         }

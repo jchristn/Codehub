@@ -12,6 +12,7 @@ const en = {
     tagline: 'Repository health console',
     loading: 'Loading...',
     save: 'Save',
+    edit: 'Edit',
     cancel: 'Cancel',
     close: 'Close',
     confirm: 'Confirm',
@@ -60,6 +61,7 @@ const en = {
     scans: 'Scans',
     requestHistory: 'Request History',
     apiExplorer: 'API Explorer',
+    customActions: 'Custom Actions',
     settings: 'Settings'
   },
   login: {
@@ -340,6 +342,28 @@ const en = {
     message: "The page you're looking for doesn't exist or has moved.",
     back: 'Back to dashboard'
   },
+  customActions: {
+    title: 'Custom Actions',
+    subtitle: "Define agent launchers that appear in each repository's actions menu.",
+    new: 'New action',
+    newTitle: 'New custom action',
+    editTitle: 'Edit custom action',
+    name: 'Name',
+    namePlaceholder: 'e.g. Review this repo',
+    agent: 'Agent',
+    dangerous: 'Run with',
+    prompt: 'Default prompt',
+    promptPlaceholder: 'The prompt passed to the agent (editable when you run it).',
+    empty: 'No custom actions yet. Create one to see it in the repository actions menu.',
+    saved: 'Custom action saved.',
+    deleted: 'Deleted {{name}}.',
+    deleteTitle: 'Delete custom action?',
+    deleteBody: 'Delete "{{name}}"? This only removes the action, not any repository.',
+    sectionTitle: 'Custom Actions',
+    runTitle: 'Run: {{name}}',
+    run: 'Run',
+    launched: 'Launching {{agent}} for {{name}}…'
+  },
   addMultiple: {
     launch: 'Add multiple',
     title: 'Add multiple directories',
@@ -418,6 +442,7 @@ const es = {
     tagline: 'Consola de estado de repositorios',
     loading: 'Cargando...',
     save: 'Guardar',
+    edit: 'Editar',
     cancel: 'Cancelar',
     close: 'Cerrar',
     confirm: 'Confirmar',
@@ -466,6 +491,7 @@ const es = {
     scans: 'Escaneos',
     requestHistory: 'Historial de solicitudes',
     apiExplorer: 'Explorador de API',
+    customActions: 'Acciones personalizadas',
     settings: 'Configuración'
   },
   login: {
@@ -737,6 +763,28 @@ const es = {
     message: 'La página que buscas no existe o se ha movido.',
     back: 'Volver al panel'
   },
+  customActions: {
+    title: 'Acciones personalizadas',
+    subtitle: 'Define lanzadores de agentes que aparecen en el menú de acciones de cada repositorio.',
+    new: 'Nueva acción',
+    newTitle: 'Nueva acción personalizada',
+    editTitle: 'Editar acción personalizada',
+    name: 'Nombre',
+    namePlaceholder: 'p. ej. Revisar este repositorio',
+    agent: 'Agente',
+    dangerous: 'Ejecutar con',
+    prompt: 'Prompt predeterminado',
+    promptPlaceholder: 'El prompt que se pasa al agente (editable al ejecutarlo).',
+    empty: 'Aún no hay acciones personalizadas. Crea una para verla en el menú de acciones del repositorio.',
+    saved: 'Acción personalizada guardada.',
+    deleted: 'Se eliminó {{name}}.',
+    deleteTitle: '¿Eliminar acción personalizada?',
+    deleteBody: '¿Eliminar "{{name}}"? Esto solo elimina la acción, no ningún repositorio.',
+    sectionTitle: 'Acciones personalizadas',
+    runTitle: 'Ejecutar: {{name}}',
+    run: 'Ejecutar',
+    launched: 'Iniciando {{agent}} para {{name}}…'
+  },
   addMultiple: {
     launch: 'Agregar varios',
     title: 'Agregar varios directorios',
@@ -765,6 +813,7 @@ const fr = {
     tagline: 'Console de santé des dépôts',
     loading: 'Chargement...',
     save: 'Enregistrer',
+    edit: 'Modifier',
     cancel: 'Annuler',
     close: 'Fermer',
     confirm: 'Confirmer',
@@ -813,6 +862,7 @@ const fr = {
     scans: 'Analyses',
     requestHistory: 'Historique des requêtes',
     apiExplorer: 'Explorateur d’API',
+    customActions: 'Actions personnalisées',
     settings: 'Paramètres'
   },
   login: {
@@ -1084,6 +1134,28 @@ const fr = {
     message: "La page que vous recherchez n'existe pas ou a été déplacée.",
     back: 'Retour au tableau de bord'
   },
+  customActions: {
+    title: 'Actions personnalisées',
+    subtitle: 'Définissez des lanceurs d’agents qui apparaissent dans le menu d’actions de chaque dépôt.',
+    new: 'Nouvelle action',
+    newTitle: 'Nouvelle action personnalisée',
+    editTitle: 'Modifier l’action personnalisée',
+    name: 'Nom',
+    namePlaceholder: 'p. ex. Examiner ce dépôt',
+    agent: 'Agent',
+    dangerous: 'Exécuter avec',
+    prompt: 'Prompt par défaut',
+    promptPlaceholder: 'Le prompt transmis à l’agent (modifiable au lancement).',
+    empty: 'Aucune action personnalisée pour l’instant. Créez-en une pour la voir dans le menu d’actions du dépôt.',
+    saved: 'Action personnalisée enregistrée.',
+    deleted: '{{name}} supprimé.',
+    deleteTitle: 'Supprimer l’action personnalisée ?',
+    deleteBody: 'Supprimer « {{name}} » ? Ceci supprime uniquement l’action, pas un dépôt.',
+    sectionTitle: 'Actions personnalisées',
+    runTitle: 'Exécuter : {{name}}',
+    run: 'Exécuter',
+    launched: 'Lancement de {{agent}} pour {{name}}…'
+  },
   addMultiple: {
     launch: 'Ajouter plusieurs',
     title: 'Ajouter plusieurs répertoires',
@@ -1112,6 +1184,7 @@ const de = {
     tagline: 'Konsole für Repository-Zustand',
     loading: 'Wird geladen...',
     save: 'Speichern',
+    edit: 'Bearbeiten',
     cancel: 'Abbrechen',
     close: 'Schließen',
     confirm: 'Bestätigen',
@@ -1160,6 +1233,7 @@ const de = {
     scans: 'Scans',
     requestHistory: 'Anfrageverlauf',
     apiExplorer: 'API-Explorer',
+    customActions: 'Benutzerdefinierte Aktionen',
     settings: 'Einstellungen'
   },
   login: {
@@ -1431,6 +1505,28 @@ const de = {
     message: 'Die gesuchte Seite existiert nicht oder wurde verschoben.',
     back: 'Zurück zum Dashboard'
   },
+  customActions: {
+    title: 'Benutzerdefinierte Aktionen',
+    subtitle: 'Definieren Sie Agent-Starter, die im Aktionsmenü jedes Repositorys erscheinen.',
+    new: 'Neue Aktion',
+    newTitle: 'Neue benutzerdefinierte Aktion',
+    editTitle: 'Benutzerdefinierte Aktion bearbeiten',
+    name: 'Name',
+    namePlaceholder: 'z. B. Dieses Repo prüfen',
+    agent: 'Agent',
+    dangerous: 'Ausführen mit',
+    prompt: 'Standard-Prompt',
+    promptPlaceholder: 'Der an den Agenten übergebene Prompt (beim Ausführen bearbeitbar).',
+    empty: 'Noch keine benutzerdefinierten Aktionen. Erstellen Sie eine, um sie im Aktionsmenü des Repositorys zu sehen.',
+    saved: 'Benutzerdefinierte Aktion gespeichert.',
+    deleted: '{{name}} gelöscht.',
+    deleteTitle: 'Benutzerdefinierte Aktion löschen?',
+    deleteBody: '"{{name}}" löschen? Dies entfernt nur die Aktion, kein Repository.',
+    sectionTitle: 'Benutzerdefinierte Aktionen',
+    runTitle: 'Ausführen: {{name}}',
+    run: 'Ausführen',
+    launched: '{{agent}} für {{name}} wird gestartet…'
+  },
   addMultiple: {
     launch: 'Mehrere hinzufügen',
     title: 'Mehrere Verzeichnisse hinzufügen',
@@ -1459,6 +1555,7 @@ const pt = {
     tagline: 'Console de saúde de repositórios',
     loading: 'Carregando...',
     save: 'Salvar',
+    edit: 'Editar',
     cancel: 'Cancelar',
     close: 'Fechar',
     confirm: 'Confirmar',
@@ -1507,6 +1604,7 @@ const pt = {
     scans: 'Escaneamentos',
     requestHistory: 'Histórico de requisições',
     apiExplorer: 'Explorador de API',
+    customActions: 'Ações personalizadas',
     settings: 'Configurações'
   },
   login: {
@@ -1777,6 +1875,28 @@ const pt = {
     title: 'Página não encontrada',
     message: 'A página que você procura não existe ou foi movida.',
     back: 'Voltar ao painel'
+  },
+  customActions: {
+    title: 'Ações personalizadas',
+    subtitle: 'Defina lançadores de agentes que aparecem no menu de ações de cada repositório.',
+    new: 'Nova ação',
+    newTitle: 'Nova ação personalizada',
+    editTitle: 'Editar ação personalizada',
+    name: 'Nome',
+    namePlaceholder: 'ex.: Revisar este repositório',
+    agent: 'Agente',
+    dangerous: 'Executar com',
+    prompt: 'Prompt padrão',
+    promptPlaceholder: 'O prompt passado ao agente (editável ao executar).',
+    empty: 'Ainda não há ações personalizadas. Crie uma para vê-la no menu de ações do repositório.',
+    saved: 'Ação personalizada salva.',
+    deleted: '{{name}} excluído.',
+    deleteTitle: 'Excluir ação personalizada?',
+    deleteBody: 'Excluir "{{name}}"? Isso remove apenas a ação, não um repositório.',
+    sectionTitle: 'Ações personalizadas',
+    runTitle: 'Executar: {{name}}',
+    run: 'Executar',
+    launched: 'Iniciando {{agent}} para {{name}}…'
   },
   addMultiple: {
     launch: 'Adicionar vários',

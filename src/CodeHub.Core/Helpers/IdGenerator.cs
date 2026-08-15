@@ -99,6 +99,15 @@ namespace CodeHub.Core.Helpers
             return Generate(Constants.RequestHistoryPrefix);
         }
 
+        /// <summary>
+        /// Generate a custom action identifier.
+        /// </summary>
+        /// <returns>Custom action identifier.</returns>
+        public static string GenerateCustomActionId()
+        {
+            return Generate(Constants.CustomActionPrefix);
+        }
+
         #endregion
     }
 }

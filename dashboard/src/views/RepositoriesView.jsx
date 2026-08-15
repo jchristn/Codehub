@@ -12,6 +12,7 @@ import AddMultipleModal from '../components/AddMultipleModal';
 import LaunchToolModal from '../components/LaunchToolModal';
 import ColumnPicker from '../components/ColumnPicker';
 import ConfirmModal from '../components/ConfirmModal';
+import InvokeCustomActionModal from '../components/InvokeCustomActionModal';
 import useDebounce from '../hooks/useDebounce';
 import { SIGNAL_TYPES, STORAGE, DEFAULT_PAGE_SIZE } from '../utils/constants';
 import { formatRelativeTime, formatDateTime } from '../i18n/formatters';
@@ -68,6 +69,8 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
   const [launch, setLaunch] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null); // { repository, recycle }
   const [deleting, setDeleting] = useState(false);
+  const [customActions, setCustomActions] = useState([]);
+  const [invoke, setInvoke] = useState(null); // { repository, action }
   const [hiddenColumns, setHiddenColumns] = useState(() => {
     try {
       return new Set(JSON.parse(localStorage.getItem(STORAGE.repoHiddenColumns) || '[]'));
@@ -111,6 +114,15 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
   useEffect(() => {
     load();
   }, [load, scanNonce]);
+
+  // Custom actions appear as a section in each row's actions menu.
+  useEffect(() => {
+    if (!apiClient) return;
+    apiClient
+      .getCustomActions()
+      .then((res) => setCustomActions(res || []))
+      .catch(() => setCustomActions([]));
+  }, [apiClient]);
 
   // Reset to page 1 when filters/sort change.
   useEffect(() => {
@@ -276,7 +288,16 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
               label: t('repositories.deletePermanent'),
               tone: 'danger',
               onClick: () => setDeleteTarget({ repository: row.repository, recycle: false })
-            }
+            },
+            ...(customActions.length > 0
+              ? [
+                  { header: true, label: t('customActions.sectionTitle') },
+                  ...customActions.map((a) => ({
+                    label: a.name,
+                    onClick: () => setInvoke({ repository: row.repository, action: a })
+                  }))
+                ]
+              : [])
           ]}
         />
       )
@@ -483,6 +504,15 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
 
       {launch && (
         <LaunchToolModal apiClient={apiClient} repository={launch.repository} tool={launch.tool} onClose={() => setLaunch(null)} />
+      )}
+
+      {invoke && (
+        <InvokeCustomActionModal
+          apiClient={apiClient}
+          repository={invoke.repository}
+          action={invoke.action}
+          onClose={() => setInvoke(null)}
+        />
       )}
 
       <ConfirmModal

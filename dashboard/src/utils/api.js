@@ -124,6 +124,31 @@ class ApiClient {
     });
   }
 
+  /** Launch an agent in a repository with a (possibly edited) prompt — a custom action. */
+  async runAgent(id, { agent, dangerous, prompt }) {
+    return this._request('POST', `/v1.0/api/repositories/${encodeURIComponent(id)}/run-agent`, {
+      body: { agent, dangerous, prompt }
+    });
+  }
+
+  // ---------------------------------------------------------------- Custom actions
+
+  async getCustomActions() {
+    return this._request('GET', '/v1.0/api/custom-actions');
+  }
+
+  async createCustomAction(action) {
+    return this._request('POST', '/v1.0/api/custom-actions', { body: action });
+  }
+
+  async updateCustomAction(id, action) {
+    return this._request('PUT', `/v1.0/api/custom-actions/${encodeURIComponent(id)}`, { body: action });
+  }
+
+  async deleteCustomAction(id) {
+    return this._request('DELETE', `/v1.0/api/custom-actions/${encodeURIComponent(id)}`);
+  }
+
   async getProject(id) {
     return this._request('GET', `/v1.0/api/projects/${encodeURIComponent(id)}`);
   }

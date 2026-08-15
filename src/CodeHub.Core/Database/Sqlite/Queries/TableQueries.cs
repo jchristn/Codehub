@@ -26,7 +26,8 @@ namespace CodeHub.Core.Database.Sqlite.Queries
                     ScanRuns,
                     GitHubSnapshots,
                     ScanSelections,
-                    RequestHistory
+                    RequestHistory,
+                    CustomActions
                 };
             }
         }
@@ -183,6 +184,20 @@ CREATE TABLE IF NOT EXISTS scan_selections (
     createdutc TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_scan_selections_included ON scan_selections(included);
+";
+
+        /// <summary>
+        /// Custom actions table (user-defined agent launchers shown in the actions menu).
+        /// </summary>
+        public static readonly string CustomActions = @"
+CREATE TABLE IF NOT EXISTS custom_actions (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    agent TEXT NOT NULL,
+    dangerous INTEGER NOT NULL DEFAULT 0,
+    prompt TEXT,
+    createdutc TEXT NOT NULL
+);
 ";
 
         /// <summary>

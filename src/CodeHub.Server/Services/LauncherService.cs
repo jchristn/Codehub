@@ -86,9 +86,79 @@ namespace CodeHub.Server.Services
             _Logging.Info(_Header + "launched " + target + " at " + path + (dangerous ? " (dangerous)" : String.Empty));
         }
 
+        /// <summary>
+        /// Open a terminal in a repository running an agent with a prompt (a custom action).
+        /// </summary>
+        /// <param name="agent">claude, codex, mux, or opencode.</param>
+        /// <param name="path">Repository path.</param>
+        /// <param name="dangerous">Whether to pass the agent's dangerous flag.</param>
+        /// <param name="prompt">Prompt to pass to the agent.</param>
+        public void OpenAgentPrompt(string agent, string path, bool dangerous, string prompt)
+        {
+            if (String.IsNullOrEmpty(agent)) throw new ArgumentNullException(nameof(agent));
+            if (String.IsNullOrEmpty(path)) throw new ArgumentNullException(nameof(path));
+
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                throw new NotSupportedException(
+                    "Custom actions launch on the machine running the CodeHub server, which is not Windows. " +
+                    "Run the server on Windows to launch an agent in a terminal.");
+            if (!Directory.Exists(path))
+                throw new DirectoryNotFoundException("Repository path no longer exists: " + path);
+
+            string command = BuildAgentCommand(agent, dangerous, prompt);
+
+            System.Collections.Generic.HashSet<IntPtr> windowsBefore = Interop.WindowForeground.Snapshot();
+
+            // The prompt goes into a temp batch file (not the wt/cmd command line), so its
+            // spaces and special characters do not need shell-level escaping.
+            string batch = WriteLaunchBatch(path, command);
+            OpenTerminal(path, "\"" + batch + "\"");
+
+            Interop.WindowForeground.BringNewWindowToForegroundAsync(windowsBefore, 3000);
+            _Logging.Info(_Header + "launched custom action (" + agent + ") at " + path + (dangerous ? " (dangerous)" : String.Empty));
+        }
+
         #endregion
 
         #region Private-Methods
+
+        private static string BuildAgentCommand(string agent, bool dangerous, string prompt)
+        {
+            string binary;
+            string dangerFlag;
+            switch (agent.Trim().ToLowerInvariant())
+            {
+                case "claude": binary = "claude"; dangerFlag = "--dangerously-skip-permissions"; break;
+                case "codex": binary = "codex"; dangerFlag = "--yolo"; break;
+                case "mux": binary = "mux"; dangerFlag = "--yolo"; break;
+                case "opencode": binary = "opencode"; dangerFlag = null; break;
+                default: throw new ArgumentException("Unknown agent: " + agent);
+            }
+
+            string command = binary;
+            if (dangerous && dangerFlag != null) command += " " + dangerFlag;
+            if (!String.IsNullOrWhiteSpace(prompt)) command += " \"" + EscapePromptForBatch(prompt) + "\"";
+            return command;
+        }
+
+        private static string EscapePromptForBatch(string prompt)
+        {
+            // Flatten to a single line and escape for a double-quoted batch argument.
+            string flat = prompt.Replace("\r\n", " ").Replace("\r", " ").Replace("\n", " ").Trim();
+            flat = flat.Replace("%", "%%");    // percent is special in batch files
+            flat = flat.Replace("\"", "\\\""); // pass embedded double quotes through to the agent
+            return flat;
+        }
+
+        private static string WriteLaunchBatch(string path, string command)
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "codehub");
+            Directory.CreateDirectory(dir);
+            string file = Path.Combine(dir, "action_" + Guid.NewGuid().ToString("N") + ".cmd");
+            string content = "@echo off\r\ncd /d \"" + path + "\"\r\n" + command + "\r\n";
+            File.WriteAllText(file, content);
+            return file;
+        }
 
         private static void StartExplorer(string path)
         {

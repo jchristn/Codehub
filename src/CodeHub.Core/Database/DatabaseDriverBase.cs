@@ -60,6 +60,11 @@ namespace CodeHub.Core.Database
         /// </summary>
         public IRequestHistoryMethods RequestHistory { get; protected set; }
 
+        /// <summary>
+        /// Custom action data access.
+        /// </summary>
+        public ICustomActionMethods CustomActions { get; protected set; }
+
         #endregion
 
         #region Public-Methods

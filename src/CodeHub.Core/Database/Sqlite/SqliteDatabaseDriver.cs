@@ -55,6 +55,7 @@ namespace CodeHub.Core.Database.Sqlite
             GitHubSnapshots = new SqliteGitHubSnapshotMethods(this);
             Selections = new SqliteScanSelectionMethods(this);
             RequestHistory = new SqliteRequestHistoryMethods(this);
+            CustomActions = new SqliteCustomActionMethods(this);
         }
 
         #endregion

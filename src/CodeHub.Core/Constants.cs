@@ -59,5 +59,10 @@ namespace CodeHub.Core
         /// Request history identifier prefix.
         /// </summary>
         public const string RequestHistoryPrefix = "req_";
+
+        /// <summary>
+        /// Custom action identifier prefix.
+        /// </summary>
+        public const string CustomActionPrefix = "act_";
     }
 }

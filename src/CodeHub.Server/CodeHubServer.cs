@@ -124,6 +124,7 @@ namespace CodeHub.Server
             new SelectionRoutes(_Ctx).Register(Server);
             new SettingsRoutes(_Ctx).Register(Server);
             new RequestHistoryRoutes(_Ctx).Register(Server);
+            new CustomActionRoutes(_Ctx).Register(Server);
         }
 
         private static async Task PreflightAsync(HttpContextBase ctx)

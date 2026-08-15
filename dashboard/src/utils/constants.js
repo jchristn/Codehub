@@ -47,6 +47,17 @@ export const SIGNAL_STATUS_OPTIONS = ['Green', 'Yellow', 'Red', 'NotApplicable',
 
 export const HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD'];
 
+/** Agents that custom actions can launch. `dangerousFlag` is null when the agent has none. */
+export const AGENTS = [
+  { value: 'claude', label: 'Claude Code', dangerousFlag: '--dangerously-skip-permissions' },
+  { value: 'codex', label: 'Codex', dangerousFlag: '--yolo' },
+  { value: 'mux', label: 'mux', dangerousFlag: '--yolo' },
+  { value: 'opencode', label: 'OpenCode', dangerousFlag: null }
+];
+
+export const agentLabel = (value) => (AGENTS.find((a) => a.value === value) || {}).label || value;
+export const agentDangerousFlag = (value) => (AGENTS.find((a) => a.value === value) || {}).dangerousFlag || null;
+
 /** Chart range presets — bucket counts must match the backend contract. */
 export const CHART_RANGES = [
   { id: 'hour', labelKey: 'chart.rangeHour', bucketMinutes: 1, buckets: 60, windowMinutes: 60 },

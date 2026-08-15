@@ -28,7 +28,10 @@ const NAV_GROUPS = [
   },
   {
     labelKey: 'nav.groupSystem',
-    items: [{ id: 'settings', labelKey: 'nav.settings', icon: '⚙' }]
+    items: [
+      { id: 'custom-actions', labelKey: 'nav.customActions', icon: '⚡' },
+      { id: 'settings', labelKey: 'nav.settings', icon: '⚙' }
+    ]
   }
 ];
 

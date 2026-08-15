@@ -63,22 +63,28 @@ function ActionMenu({ items }) {
       {open &&
         createPortal(
           <div ref={menuRef} className="action-menu" role="menu" style={{ top: coords.top, left: coords.left }}>
-            {items.map((item, i) => (
-              <button
-                key={i}
-                type="button"
-                role="menuitem"
-                className={`action-menu-item ${item.tone === 'danger' ? 'danger' : ''}`}
-                disabled={item.disabled}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpen(false);
-                  item.onClick();
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
+            {items.map((item, i) =>
+              item.header ? (
+                <div key={i} className="action-menu-header" role="presentation">
+                  {item.label}
+                </div>
+              ) : (
+                <button
+                  key={i}
+                  type="button"
+                  role="menuitem"
+                  className={`action-menu-item ${item.tone === 'danger' ? 'danger' : ''}`}
+                  disabled={item.disabled}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpen(false);
+                    item.onClick();
+                  }}
+                >
+                  {item.label}
+                </button>
+              )
+            )}
           </div>,
           document.body
         )}

@@ -13,6 +13,7 @@ import ScansView from '../views/ScansView';
 import RequestHistoryView from '../views/RequestHistoryView';
 import ApiExplorerView from '../views/ApiExplorerView';
 import SettingsView from '../views/SettingsView';
+import CustomActionsView from '../views/CustomActionsView';
 import NotFound from '../views/NotFound';
 
 /**
@@ -90,6 +91,8 @@ function Dashboard() {
         return <ApiExplorerView apiClient={apiClient} />;
       case 'settings':
         return <SettingsView apiClient={apiClient} settings={settings} />;
+      case 'custom-actions':
+        return <CustomActionsView apiClient={apiClient} />;
       default:
         return <NotFound />;
     }
