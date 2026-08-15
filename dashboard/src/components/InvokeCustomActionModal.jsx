@@ -38,6 +38,7 @@ function InvokeCustomActionModal({ apiClient, repository, action, onClose }) {
       title={t('customActions.runTitle', { name: action.name })}
       subtitle={repository?.name}
       size="md"
+      className="ca-modal-lg"
       footer={
         <>
           <button type="button" className="button-secondary" onClick={onClose} disabled={busy}>
