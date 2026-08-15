@@ -52,6 +52,10 @@ namespace CodeHub.Server.Services
             if (!Directory.Exists(path))
                 throw new DirectoryNotFoundException("Repository path no longer exists: " + path);
 
+            // Snapshot existing windows so the one we're about to open can be pulled to the
+            // foreground (the server is a background process, so new windows open behind).
+            System.Collections.Generic.HashSet<IntPtr> windowsBefore = Interop.WindowForeground.Snapshot();
+
             switch (target.Trim().ToLowerInvariant())
             {
                 case "explorer":
@@ -75,6 +79,9 @@ namespace CodeHub.Server.Services
                 default:
                     throw new ArgumentException("Unknown launch target: " + target);
             }
+
+            // Pull the newly-opened window to the foreground once it appears.
+            Interop.WindowForeground.BringNewWindowToForegroundAsync(windowsBefore, 3000);
 
             _Logging.Info(_Header + "launched " + target + " at " + path + (dangerous ? " (dangerous)" : String.Empty));
         }
