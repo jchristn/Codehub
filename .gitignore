@@ -29,3 +29,6 @@ Thumbs.db
 
 # Secrets — never commit a settings file with a real key or PAT
 codehub.local.json
+
+# Local runtime settings (auto-generated on first run; may hold API keys / PAT)
+codehub.json
