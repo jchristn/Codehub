@@ -712,7 +712,7 @@ button.tiny,
 }
 .data-table thead th {
   text-align: left;
-  padding: 0.6rem 0.75rem;
+  padding: 0.5rem 0.55rem;
   font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -729,7 +729,7 @@ button.tiny,
 .th-content { display: inline-flex; align-items: center; gap: 0.3rem; }
 .sort-indicator { font-size: 0.7em; opacity: 0.7; }
 .data-table tbody td {
-  padding: 0.55rem 0.75rem;
+  padding: 0.45rem 0.55rem;
   border-bottom: 1px solid var(--color-border);
   vertical-align: middle;
 }
@@ -741,12 +741,12 @@ button.tiny,
 .cell-center { text-align: center; }
 .cell-right { text-align: right; }
 .cell-nowrap { white-space: nowrap; }
-.cell-signal { min-width: 84px; }
-.cell-actions { text-align: right; width: 44px; }
-.cell-path { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cell-signal { min-width: 64px; }
+.cell-actions { text-align: right; width: 40px; }
+.cell-path { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cell-truncate {
   display: inline-block;
-  max-width: 200px;
+  max-width: 130px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -779,15 +779,15 @@ button.tiny,
   border: 1px solid rgba(180, 83, 9, 0.3);
 }
 
-.repo-cell { display: flex; flex-direction: column; gap: 0.1rem; min-width: 150px; }
-.repo-name { font-weight: 600; }
+.repo-cell { display: flex; flex-direction: column; gap: 0.1rem; min-width: 120px; max-width: 220px; }
+.repo-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .repo-path {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 260px;
+  max-width: 220px;
 }
 
 .table-state {
