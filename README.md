@@ -65,6 +65,26 @@ date, and languages — then rolls it all into one overall grade so you can sort
   dashboard served by the backend itself at `/dashboard` — no separate web server to run.
 - **Local and quiet.** SQLite on disk, a single static API key, and no telemetry phoned home.
 
+## Use cases
+
+CodeHub gives you a **birds-eye view of your fleet of repositories and their state and health** —
+sort and filter the table to answer questions like:
+
+- **Find repositories out of sync with `main` or with open PRs** — sort by commits ahead/behind, or
+  filter the Issues/PRs column to see what needs a merge, a rebase, or a review.
+- **Find the oldest and newest repositories** — sort by last update (or last scan) to spot the ones
+  that have gone quiet and may be due for attention, and the ones actively moving.
+- **Identify repositories with outdated dependencies** — filter the Dependencies signal to red/yellow
+  to see who's fallen behind on package versions.
+- **Identify repositories with security alerts** — filter the Security signal to surface open CVEs and
+  Dependabot alerts across the whole fleet at once.
+- **Find repositories targeting outdated frameworks** — filter the Frameworks column (e.g. `net6.0`,
+  `netcoreapp3.1`) to plan upgrades.
+- **Find archived and unarchived repositories** — filter the Archived column to separate what's still
+  live from what's been retired (and archive/unarchive from the row menu).
+- **Determine which repositories have test infrastructure** — filter the Tests signal to see which
+  projects are covered and which are flying without a net.
+
 ## Who it's for
 
 CodeHub is built for the developer or maintainer who owns *many* repositories and wants a command
