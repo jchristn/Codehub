@@ -149,6 +149,11 @@ class ApiClient {
     return this._request('POST', '/v1.0/api/scan/selection', { body: { path, selected } });
   }
 
+  /** Include many directories at once. Server ignores empties, duplicates, and bad paths. */
+  async addSelections(paths) {
+    return this._request('POST', '/v1.0/api/scan/selection/bulk', { body: { paths } });
+  }
+
   async getSelection() {
     return this._request('GET', '/v1.0/api/scan/selection');
   }

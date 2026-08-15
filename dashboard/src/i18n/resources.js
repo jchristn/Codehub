@@ -321,6 +321,15 @@ const en = {
     emptyDir: 'No subdirectories.',
     noRoots: 'No root directories are configured.'
   },
+  addMultiple: {
+    launch: 'Add multiple',
+    title: 'Add multiple directories',
+    subtitle: 'Paste one directory path per line. Empty lines, duplicates, and directories that do not exist or fall outside the configured roots are ignored.',
+    placeholder: 'C:\\Code\\my-service\nC:\\Code\\another-repo\nC:\\Code\\team\\shared-lib',
+    count: '{{count}} path(s)',
+    add: 'Add directories',
+    result: 'Added {{added}} director(ies), ignored {{ignored}}.'
+  },
   settingsForm: {
     save: 'Save settings',
     saving: 'Saving…',
@@ -690,6 +699,15 @@ const es = {
     emptyDir: 'Sin subdirectorios.',
     noRoots: 'No hay directorios raíz configurados.'
   },
+  addMultiple: {
+    launch: 'Agregar varios',
+    title: 'Agregar varios directorios',
+    subtitle: 'Pega una ruta de directorio por línea. Se ignoran las líneas vacías, los duplicados y los directorios que no existen o quedan fuera de las raíces configuradas.',
+    placeholder: 'C:\\Code\\mi-servicio\nC:\\Code\\otro-repo\nC:\\Code\\equipo\\libreria-compartida',
+    count: '{{count}} ruta(s)',
+    add: 'Agregar directorios',
+    result: 'Se agregaron {{added}} directorio(s), se ignoraron {{ignored}}.'
+  },
   pagination: {
     showing: 'Mostrando {{from}}-{{to}} de {{total}}',
     page: 'Página {{page}} de {{pages}}',
@@ -1008,6 +1026,15 @@ const fr = {
     excluded: 'exclu',
     emptyDir: 'Aucun sous-répertoire.',
     noRoots: 'Aucun répertoire racine configuré.'
+  },
+  addMultiple: {
+    launch: 'Ajouter plusieurs',
+    title: 'Ajouter plusieurs répertoires',
+    subtitle: 'Collez un chemin de répertoire par ligne. Les lignes vides, les doublons et les répertoires inexistants ou hors des racines configurées sont ignorés.',
+    placeholder: 'C:\\Code\\mon-service\nC:\\Code\\autre-depot\nC:\\Code\\equipe\\lib-partagee',
+    count: '{{count}} chemin(s)',
+    add: 'Ajouter les répertoires',
+    result: '{{added}} répertoire(s) ajouté(s), {{ignored}} ignoré(s).'
   },
   pagination: {
     showing: 'Affichage de {{from}}-{{to}} sur {{total}}',
@@ -1328,6 +1355,15 @@ const de = {
     emptyDir: 'Keine Unterverzeichnisse.',
     noRoots: 'Keine Stammverzeichnisse konfiguriert.'
   },
+  addMultiple: {
+    launch: 'Mehrere hinzufügen',
+    title: 'Mehrere Verzeichnisse hinzufügen',
+    subtitle: 'Fügen Sie einen Verzeichnispfad pro Zeile ein. Leere Zeilen, Duplikate sowie nicht vorhandene oder außerhalb der konfigurierten Stammverzeichnisse liegende Verzeichnisse werden ignoriert.',
+    placeholder: 'C:\\Code\\mein-service\nC:\\Code\\anderes-repo\nC:\\Code\\team\\gemeinsame-lib',
+    count: '{{count}} Pfad(e)',
+    add: 'Verzeichnisse hinzufügen',
+    result: '{{added}} Verzeichnis(se) hinzugefügt, {{ignored}} ignoriert.'
+  },
   pagination: {
     showing: 'Zeige {{from}}-{{to}} von {{total}}',
     page: 'Seite {{page}} von {{pages}}',
@@ -1646,6 +1682,15 @@ const pt = {
     excluded: 'excluído',
     emptyDir: 'Sem subdiretórios.',
     noRoots: 'Nenhum diretório raiz configurado.'
+  },
+  addMultiple: {
+    launch: 'Adicionar vários',
+    title: 'Adicionar vários diretórios',
+    subtitle: 'Cole um caminho de diretório por linha. Linhas vazias, duplicados e diretórios que não existem ou estão fora das raízes configuradas são ignorados.',
+    placeholder: 'C:\\Code\\meu-servico\nC:\\Code\\outro-repo\nC:\\Code\\equipe\\lib-compartilhada',
+    count: '{{count}} caminho(s)',
+    add: 'Adicionar diretórios',
+    result: '{{added}} diretório(s) adicionado(s), {{ignored}} ignorado(s).'
   },
   pagination: {
     showing: 'Mostrando {{from}}-{{to}} de {{total}}',

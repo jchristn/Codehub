@@ -51,6 +51,7 @@ namespace CodeHub.Server.Routes
             server.Routes.PostAuthentication.Static.Add(HttpMethod.GET, "/v1.0/api/fs/browse", BrowseAsync);
             server.Routes.PostAuthentication.Static.Add(HttpMethod.GET, "/v1.0/api/scan/selection", ListSelectionAsync);
             server.Routes.PostAuthentication.Static.Add(HttpMethod.POST, "/v1.0/api/scan/selection", SetSelectionAsync);
+            server.Routes.PostAuthentication.Static.Add(HttpMethod.POST, "/v1.0/api/scan/selection/bulk", AddBulkSelectionAsync);
         }
 
         #endregion
@@ -138,6 +139,57 @@ namespace CodeHub.Server.Routes
                 { "state", SelectionService.StateFor(normalized, sets).ToString() }
             };
             await RouteHelper.SendJson(ctx, _Ctx.Serializer, 200, result).ConfigureAwait(false);
+        }
+
+        private async Task AddBulkSelectionAsync(HttpContextBase ctx)
+        {
+            try
+            {
+                string body = ctx.Request.DataAsString;
+                BulkSelectionRequest request = String.IsNullOrEmpty(body) ? null : _Ctx.Serializer.DeserializeJson<BulkSelectionRequest>(body);
+                List<string> rawPaths = request?.Paths ?? new List<string>();
+                List<string> rootPaths = _Ctx.Settings.Directories.RootPaths ?? new List<string>();
+
+                HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                List<string> valid = new List<string>();
+                int ignored = 0;
+
+                foreach (string raw in rawPaths)
+                {
+                    if (String.IsNullOrWhiteSpace(raw)) continue; // ignore empty lines
+
+                    string normalized = SelectionService.Normalize(raw);
+                    if (String.IsNullOrEmpty(normalized) || !seen.Add(normalized)) // dedupe (case-insensitive)
+                    {
+                        if (!String.IsNullOrEmpty(normalized)) ignored++;
+                        continue;
+                    }
+
+                    if (!IsWithinRoots(normalized, rootPaths) || !Directory.Exists(normalized))
+                    {
+                        ignored++; // ignore bad directories (outside roots or non-existent)
+                        continue;
+                    }
+
+                    valid.Add(normalized);
+                }
+
+                foreach (string path in valid)
+                    await _Ctx.Selection.SelectAsync(path, ctx.Token).ConfigureAwait(false);
+
+                Dictionary<string, object> result = new Dictionary<string, object>
+                {
+                    { "added", valid.Count },
+                    { "ignored", ignored }
+                };
+                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 200, result).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                _Ctx.Logging.Warn("[Selection] bulk add failed: " + e.Message);
+                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 400,
+                    new ErrorResponse("BadRequest", "Could not process the directory list.")).ConfigureAwait(false);
+            }
         }
 
         private BrowseNode BuildNode(string dir, SelectionSets sets)

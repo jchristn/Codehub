@@ -8,6 +8,7 @@ import StatusBadge from '../components/StatusBadge';
 import ActionMenu from '../components/ActionMenu';
 import RepositoryDetailModal from '../components/RepositoryDetailModal';
 import DirectoryPicker from '../components/DirectoryPicker';
+import AddMultipleModal from '../components/AddMultipleModal';
 import LaunchToolModal from '../components/LaunchToolModal';
 import useDebounce from '../hooks/useDebounce';
 import { SIGNAL_TYPES, STORAGE, DEFAULT_PAGE_SIZE } from '../utils/constants';
@@ -59,6 +60,7 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
   const [error, setError] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
+  const [showAddMultiple, setShowAddMultiple] = useState(false);
   const [launch, setLaunch] = useState(null);
 
   const debouncedFilters = useDebounce(filters, 300);
@@ -318,6 +320,9 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
             <button type="button" className="button-secondary" onClick={() => setShowPicker(true)}>
               {t('picker.launch')}
             </button>
+            <button type="button" className="button-secondary" onClick={() => setShowAddMultiple(true)}>
+              {t('addMultiple.launch')}
+            </button>
             <button type="button" className="button-primary" onClick={onScanNow} disabled={isScanning}>
               {isScanning ? t('common.scanning') : t('common.scanNow')}
             </button>
@@ -370,6 +375,10 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
       )}
 
       {showPicker && <DirectoryPicker apiClient={apiClient} onClose={() => setShowPicker(false)} onChanged={load} />}
+
+      {showAddMultiple && (
+        <AddMultipleModal apiClient={apiClient} onClose={() => setShowAddMultiple(false)} onChanged={load} />
+      )}
 
       {launch && (
         <LaunchToolModal apiClient={apiClient} repository={launch.repository} tool={launch.tool} onClose={() => setLaunch(null)} />
