@@ -1,6 +1,7 @@
 namespace CodeHub.Core.Database.Sqlite.Implementations
 {
     using System;
+    using System.Collections.Generic;
     using System.Data;
     using System.Threading;
     using System.Threading.Tasks;
@@ -49,6 +50,7 @@ namespace CodeHub.Core.Database.Sqlite.Implementations
                     "owner=" + Sanitizer.Quote(snapshot.Owner) + ", " +
                     "repo=" + Sanitizer.Quote(snapshot.Repo) + ", " +
                     "isprivate=" + Sanitizer.Bool(snapshot.IsPrivate) + ", " +
+                    "isarchived=" + Sanitizer.Bool(snapshot.IsArchived) + ", " +
                     "openissues=" + snapshot.OpenIssues + ", " +
                     "openpullrequests=" + snapshot.OpenPullRequests + ", " +
                     "dependabotopen=" + snapshot.DependabotOpen + ", " +
@@ -61,12 +63,13 @@ namespace CodeHub.Core.Database.Sqlite.Implementations
             else
             {
                 sql =
-                    "INSERT INTO github_snapshots (id, repoid, owner, repo, isprivate, openissues, openpullrequests, dependabotopen, dependabothigh, dependabotcritical, error, fetchedutc) VALUES (" +
+                    "INSERT INTO github_snapshots (id, repoid, owner, repo, isprivate, isarchived, openissues, openpullrequests, dependabotopen, dependabothigh, dependabotcritical, error, fetchedutc) VALUES (" +
                     Sanitizer.Quote(snapshot.Id) + ", " +
                     Sanitizer.Quote(snapshot.RepositoryId) + ", " +
                     Sanitizer.Quote(snapshot.Owner) + ", " +
                     Sanitizer.Quote(snapshot.Repo) + ", " +
                     Sanitizer.Bool(snapshot.IsPrivate) + ", " +
+                    Sanitizer.Bool(snapshot.IsArchived) + ", " +
                     snapshot.OpenIssues + ", " +
                     snapshot.OpenPullRequests + ", " +
                     snapshot.DependabotOpen + ", " +
@@ -87,7 +90,25 @@ namespace CodeHub.Core.Database.Sqlite.Implementations
             DataTable table = await _Db.ExecuteQueryAsync(
                 "SELECT * FROM github_snapshots WHERE repoid=" + Sanitizer.Quote(repositoryId) + ";", false, token).ConfigureAwait(false);
             if (table.Rows.Count == 0) return null;
-            DataRow row = table.Rows[0];
+            return FromRow(table.Rows[0]);
+        }
+
+        /// <inheritdoc />
+        public async Task<List<GitHubSnapshot>> EnumerateAllAsync(CancellationToken token = default)
+        {
+            DataTable table = await _Db.ExecuteQueryAsync(
+                "SELECT * FROM github_snapshots;", false, token).ConfigureAwait(false);
+            List<GitHubSnapshot> results = new List<GitHubSnapshot>();
+            foreach (DataRow row in table.Rows) results.Add(FromRow(row));
+            return results;
+        }
+
+        #endregion
+
+        #region Private-Methods
+
+        private static GitHubSnapshot FromRow(DataRow row)
+        {
             return new GitHubSnapshot
             {
                 Id = row.GetString("id"),
@@ -95,6 +116,7 @@ namespace CodeHub.Core.Database.Sqlite.Implementations
                 Owner = row.GetString("owner"),
                 Repo = row.GetString("repo"),
                 IsPrivate = row.GetBool("isprivate"),
+                IsArchived = row.GetBool("isarchived"),
                 OpenIssues = row.GetInt("openissues"),
                 OpenPullRequests = row.GetInt("openpullrequests"),
                 DependabotOpen = row.GetInt("dependabotopen"),

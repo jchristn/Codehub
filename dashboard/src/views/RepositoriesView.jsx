@@ -23,6 +23,7 @@ const EMPTY_FILTERS = {
   branch: '',
   commits: '',
   updated: '',
+  archived: '',
   tests: '',
   telemetry: '',
   dependencies: '',
@@ -342,6 +343,17 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
       render: (row) => (
         <span title={formatDateTime(row.repository?.lastUpdateUtc)}>{formatRelativeTime(row.repository?.lastUpdateUtc)}</span>
       )
+    },
+    {
+      key: 'archived',
+      label: t('repositories.colArchived'),
+      sortKey: 'archived',
+      className: 'cell-center cell-nowrap',
+      renderFilter: () => selectFilter('archived', YESNO),
+      render: (row) => {
+        if (!row.github) return '—';
+        return row.github.isArchived ? <span className="archived-badge">{t('repositories.archivedYes')}</span> : t('common.no');
+      }
     },
     ...signalColumns,
     {

@@ -105,6 +105,7 @@ namespace CodeHub.Core.Services
 
                 JsonElement repoElement = repoJson.Value;
                 if (repoElement.TryGetProperty("private", out JsonElement priv)) snapshot.IsPrivate = priv.GetBoolean();
+                if (repoElement.TryGetProperty("archived", out JsonElement arch)) snapshot.IsArchived = arch.GetBoolean();
                 int openIssuesAndPrs = repoElement.TryGetProperty("open_issues_count", out JsonElement oi) ? oi.GetInt32() : 0;
 
                 int openPrs = await CountPagedAsync(

@@ -47,6 +47,11 @@ namespace CodeHub.Core.Models
         public bool IsPrivate { get; set; } = false;
 
         /// <summary>
+        /// Whether the GitHub repository is archived (read-only).
+        /// </summary>
+        public bool IsArchived { get; set; } = false;
+
+        /// <summary>
         /// Count of open issues (excluding pull requests).
         /// </summary>
         public int OpenIssues { get; set; } = 0;

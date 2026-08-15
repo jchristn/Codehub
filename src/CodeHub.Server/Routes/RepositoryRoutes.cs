@@ -68,6 +68,11 @@ namespace CodeHub.Server.Routes
                 .GroupBy(p => p.RepositoryId)
                 .ToDictionary(g => g.Key, g => RollupFrameworks(g));
 
+            List<GitHubSnapshot> allGitHub = await _Ctx.Db.GitHubSnapshots.EnumerateAllAsync(ctx.Token).ConfigureAwait(false);
+            Dictionary<string, GitHubSnapshot> githubByRepo = allGitHub
+                .GroupBy(g => g.RepositoryId)
+                .ToDictionary(g => g.Key, g => g.First());
+
             string health = RouteHelper.Query(ctx, "health");
             string language = RouteHelper.Query(ctx, "language");
             string visibility = RouteHelper.Query(ctx, "visibility");
@@ -126,7 +131,14 @@ namespace CodeHub.Server.Routes
                 frameworksByRepo.TryGetValue(r.Id, out List<string> fw) &&
                 fw.Any(f => f.Contains(frameworks, StringComparison.OrdinalIgnoreCase)));
 
-            List<Repository> filtered = OrderRepositories(query, sort, dir, signalsByRepo, frameworksByRepo);
+            string archived = RouteHelper.Query(ctx, "archived");
+            if (!String.IsNullOrEmpty(archived))
+            {
+                bool wantArchived = String.Equals(archived, "Yes", StringComparison.OrdinalIgnoreCase);
+                query = query.Where(r => (githubByRepo.TryGetValue(r.Id, out GitHubSnapshot gh) && gh.IsArchived) == wantArchived);
+            }
+
+            List<Repository> filtered = OrderRepositories(query, sort, dir, signalsByRepo, frameworksByRepo, githubByRepo);
             int total = filtered.Count;
 
             List<Repository> pageRepos = filtered.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
@@ -137,7 +149,7 @@ namespace CodeHub.Server.Routes
                 {
                     Repository = repo,
                     Signals = signalsByRepo.TryGetValue(repo.Id, out List<Signal> s) ? s : new List<Signal>(),
-                    GitHub = await _Ctx.Db.GitHubSnapshots.ReadByRepositoryAsync(repo.Id, ctx.Token).ConfigureAwait(false),
+                    GitHub = githubByRepo.TryGetValue(repo.Id, out GitHubSnapshot ghSnap) ? ghSnap : null,
                     TargetFrameworks = frameworksByRepo.TryGetValue(repo.Id, out List<string> fw) ? fw : new List<string>()
                 };
                 items.Add(item);
@@ -306,13 +318,15 @@ namespace CodeHub.Server.Routes
 
         private static List<Repository> OrderRepositories(
             IEnumerable<Repository> repos, string sort, string dir,
-            Dictionary<string, List<Signal>> signalsByRepo, Dictionary<string, List<string>> frameworksByRepo)
+            Dictionary<string, List<Signal>> signalsByRepo, Dictionary<string, List<string>> frameworksByRepo,
+            Dictionary<string, GitHubSnapshot> githubByRepo)
         {
             bool desc = String.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase);
             switch ((sort ?? "name").ToLowerInvariant())
             {
                 case "path": return ApplyString(repos, r => r.Path, desc);
                 case "frameworks": return ApplyString(repos, r => frameworksByRepo.TryGetValue(r.Id, out List<string> fw) ? String.Join(",", fw) : String.Empty, desc);
+                case "archived": return ApplyInt(repos, r => githubByRepo.TryGetValue(r.Id, out GitHubSnapshot gh) && gh.IsArchived ? 1 : 0, desc);
                 case "language": return ApplyString(repos, r => r.PrimaryLanguage.ToString(), desc);
                 case "visibility": return ApplyString(repos, r => r.Visibility.ToString(), desc);
                 case "version": return ApplyString(repos, r => r.CurrentVersion, desc);
