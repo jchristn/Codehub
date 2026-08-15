@@ -42,7 +42,7 @@ function Login() {
 
       <div className="login-card">
         <div className="login-header">
-          <img src="/logo.png" alt={t('common.appName')} className="login-logo" />
+          <img src={`${import.meta.env.BASE_URL}logo.png`} alt={t('common.appName')} className="login-logo" />
           <h1 className="login-brand">{t('common.appName')}</h1>
           <p className="login-tagline">{t('common.tagline')}</p>
         </div>

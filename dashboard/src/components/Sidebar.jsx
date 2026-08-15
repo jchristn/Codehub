@@ -38,7 +38,7 @@ function Sidebar({ collapsed, version }) {
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-brand">
-        <img src="/logo.png" alt="" className="sidebar-logo" />
+        <img src={`${import.meta.env.BASE_URL}logo.png`} alt="" className="sidebar-logo" />
         {!collapsed && <span className="sidebar-brand-name">{t('common.appName')}</span>}
       </div>
 
