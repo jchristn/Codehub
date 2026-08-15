@@ -24,6 +24,17 @@ function SettingsView({ apiClient }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
+  const [patStatus, setPatStatus] = useState(null); // null | 'checking' | { valid, login, message }
+
+  const validatePat = async () => {
+    setPatStatus('checking');
+    try {
+      const res = await apiClient.validateGithubToken(s.gitHub.personalAccessToken || '');
+      setPatStatus(res || { valid: false });
+    } catch (e) {
+      setPatStatus({ valid: false, message: e?.body || t('common.error') });
+    }
+  };
 
   const load = useCallback(() => {
     setLoading(true);
@@ -117,8 +128,34 @@ function SettingsView({ apiClient }) {
         </Section>
 
         <Section title={t('settingsForm.github')}>
-          <Field label={t('settingsForm.pat')}><input type="password" value={s.github.personalAccessToken || ''} onChange={(e) => set('github', 'personalAccessToken', e.target.value)} /></Field>
-          <Field label={t('settingsForm.owner')}><input value={s.github.owner || ''} onChange={(e) => set('github', 'owner', e.target.value)} /></Field>
+          <Field label={t('settingsForm.pat')}>
+            <div className="pat-row">
+              <input
+                type="password"
+                value={s.gitHub.personalAccessToken || ''}
+                onChange={(e) => {
+                  set('gitHub', 'personalAccessToken', e.target.value);
+                  setPatStatus(null);
+                }}
+              />
+              <button
+                type="button"
+                className="button-secondary tiny"
+                onClick={validatePat}
+                disabled={patStatus === 'checking' || !(s.gitHub.personalAccessToken || '').trim()}
+              >
+                {patStatus === 'checking' ? t('settingsForm.validating') : t('settingsForm.validate')}
+              </button>
+            </div>
+            {patStatus && patStatus !== 'checking' && (
+              <span className={`pat-status ${patStatus.valid ? 'valid' : 'invalid'}`}>
+                {patStatus.valid
+                  ? `✓ ${t('settingsForm.patValid', { login: patStatus.login || '' })}`
+                  : `✗ ${patStatus.message || t('settingsForm.patInvalid')}`}
+              </span>
+            )}
+          </Field>
+          <Field label={t('settingsForm.owner')}><input value={s.gitHub.owner || ''} onChange={(e) => set('gitHub', 'owner', e.target.value)} /></Field>
         </Section>
 
         <Section title={t('settingsForm.database')}>

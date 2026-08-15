@@ -211,6 +211,11 @@ class ApiClient {
     return this._request('PUT', '/v1.0/api/settings', { body: settings });
   }
 
+  /** Validate a GitHub PAT. Returns { valid, login, message }. */
+  async validateGithubToken(token) {
+    return this._request('POST', '/v1.0/api/github/validate', { body: { token } });
+  }
+
   // ---------------------------------------------------------------- Request history
 
   async getRequestHistory(filters = {}) {

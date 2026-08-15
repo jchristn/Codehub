@@ -43,6 +43,7 @@ namespace CodeHub.Server.Routes
             server.Routes.PostAuthentication.Static.Add(HttpMethod.GET, "/v1.0/api/settings", GetAsync);
             server.Routes.PostAuthentication.Static.Add(HttpMethod.GET, "/v1.0/api/settings/editable", GetEditableAsync);
             server.Routes.PostAuthentication.Static.Add(HttpMethod.PUT, "/v1.0/api/settings", UpdateAsync);
+            server.Routes.PostAuthentication.Static.Add(HttpMethod.POST, "/v1.0/api/github/validate", ValidateGitHubAsync);
         }
 
         #endregion
@@ -77,6 +78,26 @@ namespace CodeHub.Server.Routes
         {
             // Full settings for the editable form (local single-operator model).
             await RouteHelper.SendJson(ctx, _Ctx.Serializer, 200, _Ctx.Settings).ConfigureAwait(false);
+        }
+
+        private async Task ValidateGitHubAsync(HttpContextBase ctx)
+        {
+            string body = ctx.Request.DataAsString;
+            CodeHub.Core.Requests.TokenValidateRequest request =
+                String.IsNullOrEmpty(body) ? null : _Ctx.Serializer.DeserializeJson<CodeHub.Core.Requests.TokenValidateRequest>(body);
+            string tokenToTest = request?.Token;
+            if (String.IsNullOrWhiteSpace(tokenToTest)) tokenToTest = _Ctx.Settings.GitHub.PersonalAccessToken;
+
+            TokenValidationResult result;
+            try
+            {
+                result = await _Ctx.GitHub.ValidateTokenAsync(tokenToTest, ctx.Token).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                result = new TokenValidationResult { Valid = false, Message = e.Message };
+            }
+            await RouteHelper.SendJson(ctx, _Ctx.Serializer, 200, result).ConfigureAwait(false);
         }
 
         private async Task UpdateAsync(HttpContextBase ctx)

@@ -328,12 +328,12 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
             },
             {
               label: t('repositories.archive'),
-              disabled: !githubWebUrl(row.repository) || row.github?.isArchived === true,
+              disabled: !githubWebUrl(row.repository) || row.gitHub?.isArchived === true,
               onClick: () => setArchiveTarget({ repository: row.repository, archived: true })
             },
             {
               label: t('repositories.unarchive'),
-              disabled: !githubWebUrl(row.repository) || !row.github?.isArchived,
+              disabled: !githubWebUrl(row.repository) || !row.gitHub?.isArchived,
               onClick: () => setArchiveTarget({ repository: row.repository, archived: false })
             },
             {
@@ -466,8 +466,8 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
       className: 'cell-center cell-nowrap',
       renderFilter: () => selectFilter('archived', YESNO),
       render: (row) => {
-        if (!row.github) return '—';
-        return row.github.isArchived ? <span className="archived-badge">{t('repositories.archivedYes')}</span> : t('common.no');
+        if (!row.gitHub) return '—';
+        return row.gitHub.isArchived ? <span className="archived-badge">{t('repositories.archivedYes')}</span> : t('common.no');
       }
     },
     ...signalColumns,

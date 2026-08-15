@@ -9,6 +9,7 @@ namespace CodeHub.Core.Services
     using System.Threading.Tasks;
     using CodeHub.Core.Enums;
     using CodeHub.Core.Models;
+    using CodeHub.Core.Responses;
     using CodeHub.Core.Services.Collectors;
     using CodeHub.Core.Settings;
 
@@ -158,6 +159,45 @@ namespace CodeHub.Core.Services
                     "GitHub rejected the request (" + (int)response.StatusCode + "). " +
                     (String.IsNullOrEmpty(detail) ? "Ensure the token has admin rights on the repository." : detail));
             }
+        }
+
+        /// <summary>
+        /// Validate a GitHub personal access token by calling GET /user with it.
+        /// </summary>
+        /// <param name="token">Token to validate.</param>
+        /// <param name="cancel">Cancellation token.</param>
+        /// <returns>Whether the token is valid, the associated login, and a message on failure.</returns>
+        public async Task<TokenValidationResult> ValidateTokenAsync(string token, CancellationToken cancel = default)
+        {
+            if (String.IsNullOrWhiteSpace(token))
+                return new TokenValidationResult { Valid = false, Message = "No token provided." };
+
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "user");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Trim());
+
+            HttpResponseMessage response = await _Http.SendAsync(request, cancel).ConfigureAwait(false);
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+                return new TokenValidationResult { Valid = false, Message = "The token is invalid or has expired." };
+            if (!response.IsSuccessStatusCode)
+            {
+                string err = await response.Content.ReadAsStringAsync(cancel).ConfigureAwait(false);
+                return new TokenValidationResult { Valid = false, Message = ExtractMessage(err) ?? ("GitHub returned " + (int)response.StatusCode + ".") };
+            }
+
+            string body = await response.Content.ReadAsStringAsync(cancel).ConfigureAwait(false);
+            string login = null;
+            try
+            {
+                using (JsonDocument doc = JsonDocument.Parse(body))
+                {
+                    if (doc.RootElement.TryGetProperty("login", out JsonElement l)) login = l.GetString();
+                }
+            }
+            catch (Exception)
+            {
+                // ignore
+            }
+            return new TokenValidationResult { Valid = true, Login = login };
         }
 
         #endregion

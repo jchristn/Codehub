@@ -1053,6 +1053,13 @@ button.tiny,
   color: var(--color-text-muted);
 }
 
+/* -------------------------------------------------- GitHub PAT validation */
+.pat-row { display: flex; align-items: center; gap: var(--spacing-sm); }
+.pat-row input { flex: 1; }
+.pat-status { display: inline-block; margin-top: 0.35rem; font-size: var(--font-size-xs); font-weight: 600; }
+.pat-status.valid { color: var(--color-success, #15803d); }
+.pat-status.invalid { color: var(--color-danger); }
+
 /* -------------------------------------------------- Custom actions */
 /* Create/edit modal: 50% wider than size-md (640 -> 960) and taller. */
 .modal-panel.ca-modal-lg { max-width: 960px; }
