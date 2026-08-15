@@ -96,7 +96,9 @@ const en = {
     openExplorer: 'Open in Explorer',
     openTerminal: 'Open in Terminal',
     openClaude: 'Open Claude',
-    openCodex: 'Open Codex'
+    openCodex: 'Open Codex',
+    openMux: 'Open with mux',
+    openOpenCode: 'Open with OpenCode'
   },
   launch: {
     title: 'Open {{tool}}',
@@ -104,6 +106,7 @@ const en = {
     started: 'Launching {{tool}}…',
     failed: 'Could not launch. Is the CodeHub server running on this machine?',
     useFlag: 'Run with',
+    confirm: 'Launch {{tool}} in this repository on the server host?',
     warning: 'This bypasses the tool’s safety prompts. Use only in repositories you trust.'
   },
   home: {
@@ -471,7 +474,9 @@ const es = {
     openExplorer: 'Abrir en el Explorador',
     openTerminal: 'Abrir en la Terminal',
     openClaude: 'Abrir Claude',
-    openCodex: 'Abrir Codex'
+    openCodex: 'Abrir Codex',
+    openMux: 'Abrir con mux',
+    openOpenCode: 'Abrir con OpenCode'
   },
   launch: {
     title: 'Abrir {{tool}}',
@@ -479,6 +484,7 @@ const es = {
     started: 'Iniciando {{tool}}…',
     failed: 'No se pudo iniciar. ¿El servidor CodeHub se está ejecutando en esta máquina?',
     useFlag: 'Ejecutar con',
+    confirm: '¿Iniciar {{tool}} en este repositorio en el servidor?',
     warning: 'Esto omite las confirmaciones de seguridad de la herramienta. Úsalo solo en repositorios de confianza.'
   },
   home: {
@@ -787,7 +793,9 @@ const fr = {
     openExplorer: 'Ouvrir dans l’Explorateur',
     openTerminal: 'Ouvrir dans le Terminal',
     openClaude: 'Ouvrir Claude',
-    openCodex: 'Ouvrir Codex'
+    openCodex: 'Ouvrir Codex',
+    openMux: 'Ouvrir avec mux',
+    openOpenCode: 'Ouvrir avec OpenCode'
   },
   launch: {
     title: 'Ouvrir {{tool}}',
@@ -795,6 +803,7 @@ const fr = {
     started: 'Lancement de {{tool}}…',
     failed: 'Lancement impossible. Le serveur CodeHub tourne-t-il sur cette machine ?',
     useFlag: 'Exécuter avec',
+    confirm: 'Lancer {{tool}} dans ce dépôt sur le serveur ?',
     warning: 'Ceci contourne les confirmations de sécurité de l’outil. À utiliser uniquement dans des dépôts de confiance.'
   },
   home: {
@@ -1103,7 +1112,9 @@ const de = {
     openExplorer: 'Im Explorer öffnen',
     openTerminal: 'Im Terminal öffnen',
     openClaude: 'Claude öffnen',
-    openCodex: 'Codex öffnen'
+    openCodex: 'Codex öffnen',
+    openMux: 'Mit mux öffnen',
+    openOpenCode: 'Mit OpenCode öffnen'
   },
   launch: {
     title: '{{tool}} öffnen',
@@ -1111,6 +1122,7 @@ const de = {
     started: '{{tool}} wird gestartet…',
     failed: 'Start fehlgeschlagen. Läuft der CodeHub-Server auf diesem Rechner?',
     useFlag: 'Ausführen mit',
+    confirm: '{{tool}} in diesem Repository auf dem Server-Host starten?',
     warning: 'Dies umgeht die Sicherheitsabfragen des Tools. Nur in vertrauenswürdigen Repositories verwenden.'
   },
   home: {
@@ -1419,7 +1431,9 @@ const pt = {
     openExplorer: 'Abrir no Explorador',
     openTerminal: 'Abrir no Terminal',
     openClaude: 'Abrir Claude',
-    openCodex: 'Abrir Codex'
+    openCodex: 'Abrir Codex',
+    openMux: 'Abrir com mux',
+    openOpenCode: 'Abrir com OpenCode'
   },
   launch: {
     title: 'Abrir {{tool}}',
@@ -1427,6 +1441,7 @@ const pt = {
     started: 'Iniciando {{tool}}…',
     failed: 'Não foi possível iniciar. O servidor CodeHub está em execução nesta máquina?',
     useFlag: 'Executar com',
+    confirm: 'Iniciar {{tool}} neste repositório no servidor?',
     warning: 'Isto ignora as confirmações de segurança da ferramenta. Use apenas em repositórios confiáveis.'
   },
   home: {

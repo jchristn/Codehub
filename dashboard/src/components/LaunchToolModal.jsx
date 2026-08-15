@@ -5,17 +5,21 @@ import { useToast } from '../context/ToastContext';
 
 const FLAGS = {
   claude: '--dangerously-skip-permissions',
-  codex: '--yolo'
+  codex: '--yolo',
+  mux: '--yolo'
 };
 
 const LABELS = {
   claude: 'Claude',
-  codex: 'Codex'
+  codex: 'Codex',
+  mux: 'mux',
+  opencode: 'OpenCode'
 };
 
 /**
- * Confirmation modal for launching Claude or Codex in a repository. Asks whether
- * to pass the tool's dangerous flag before launching on the server host.
+ * Confirmation modal for launching an agentic CLI (Claude, Codex, mux, OpenCode) in a
+ * repository. When the tool has a dangerous flag it asks whether to pass it before
+ * launching on the server host; tools without one (OpenCode) are a plain confirmation.
  */
 function LaunchToolModal({ apiClient, repository, tool, onClose }) {
   const { t } = useTranslation();
@@ -58,13 +62,19 @@ function LaunchToolModal({ apiClient, repository, tool, onClose }) {
     >
       <div className="launch-body">
         <p className="mono launch-path">{repository?.path}</p>
-        <label className="launch-flag">
-          <input type="checkbox" checked={dangerous} onChange={(e) => setDangerous(e.target.checked)} />
-          <span>
-            {t('launch.useFlag')} <code>{flag}</code>
-          </span>
-        </label>
-        {dangerous && <p className="launch-warning">{t('launch.warning')}</p>}
+        {flag ? (
+          <>
+            <label className="launch-flag">
+              <input type="checkbox" checked={dangerous} onChange={(e) => setDangerous(e.target.checked)} />
+              <span>
+                {t('launch.useFlag')} <code>{flag}</code>
+              </span>
+            </label>
+            {dangerous && <p className="launch-warning">{t('launch.warning')}</p>}
+          </>
+        ) : (
+          <p className="launch-confirm">{t('launch.confirm', { tool: label })}</p>
+        )}
       </div>
     </Modal>
   );

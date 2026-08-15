@@ -286,6 +286,8 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
             { label: t('actions.openTerminal'), onClick: () => openExternal(row.repository, 'terminal') },
             { label: t('actions.openClaude'), onClick: () => setLaunch({ repository: row.repository, tool: 'claude' }) },
             { label: t('actions.openCodex'), onClick: () => setLaunch({ repository: row.repository, tool: 'codex' }) },
+            { label: t('actions.openMux'), onClick: () => setLaunch({ repository: row.repository, tool: 'mux' }) },
+            { label: t('actions.openOpenCode'), onClick: () => setLaunch({ repository: row.repository, tool: 'opencode' }) },
             {
               label: row.repository?.isIncluded ? t('repositories.excludeAction') : t('repositories.includeAction'),
               onClick: () => toggleInclusion(row.repository)

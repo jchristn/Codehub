@@ -1279,4 +1279,5 @@ button.tiny,
   padding: var(--spacing-sm);
   margin: 0;
 }
+.launch-confirm { font-size: var(--font-size-sm); color: var(--color-text); margin: 0; }
 .launch-footer { display: flex; justify-content: flex-end; gap: var(--spacing-sm); width: 100%; }

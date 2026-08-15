@@ -37,7 +37,7 @@ namespace CodeHub.Server.Services
         /// <summary>
         /// Open a repository path in the requested tool.
         /// </summary>
-        /// <param name="target">explorer, terminal, claude, or codex.</param>
+        /// <param name="target">explorer, terminal, claude, codex, mux, or opencode.</param>
         /// <param name="path">Repository path.</param>
         /// <param name="dangerous">Whether to pass the tool's dangerous flag.</param>
         public void Open(string target, string path, bool dangerous)
@@ -65,6 +65,12 @@ namespace CodeHub.Server.Services
                     break;
                 case "codex":
                     OpenTerminal(path, "codex" + (dangerous ? " --yolo" : String.Empty));
+                    break;
+                case "mux":
+                    OpenTerminal(path, "mux" + (dangerous ? " --yolo" : String.Empty));
+                    break;
+                case "opencode":
+                    OpenTerminal(path, "opencode");
                     break;
                 default:
                     throw new ArgumentException("Unknown launch target: " + target);
