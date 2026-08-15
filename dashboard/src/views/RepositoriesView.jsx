@@ -69,6 +69,8 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
   const [launch, setLaunch] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null); // { repository, recycle }
   const [deleting, setDeleting] = useState(false);
+  const [archiveTarget, setArchiveTarget] = useState(null); // { repository, archived }
+  const [archiving, setArchiving] = useState(false);
   const [customActions, setCustomActions] = useState([]);
   const [invoke, setInvoke] = useState(null); // { repository, action }
   const [hiddenColumns, setHiddenColumns] = useState(() => {
@@ -185,6 +187,25 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
     }
   }, [apiClient, deleteTarget, toast, t, load]);
 
+  const confirmArchive = useCallback(async () => {
+    if (!archiveTarget) return;
+    setArchiving(true);
+    try {
+      await apiClient.setArchived(archiveTarget.repository.id, archiveTarget.archived);
+      toast.success(
+        t(archiveTarget.archived ? 'repositories.archived' : 'repositories.unarchived', {
+          name: archiveTarget.repository.name
+        })
+      );
+      setArchiveTarget(null);
+      load();
+    } catch (e) {
+      toast.error(e?.body || t('common.error'));
+    } finally {
+      setArchiving(false);
+    }
+  }, [apiClient, archiveTarget, toast, t, load]);
+
   const rescanRepo = useCallback(
     async (repo) => {
       try {
@@ -292,6 +313,16 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
             {
               label: row.repository?.isIncluded ? t('repositories.excludeAction') : t('repositories.includeAction'),
               onClick: () => toggleInclusion(row.repository)
+            },
+            {
+              label: t('repositories.archive'),
+              disabled: !githubWebUrl(row.repository) || row.github?.isArchived === true,
+              onClick: () => setArchiveTarget({ repository: row.repository, archived: true })
+            },
+            {
+              label: t('repositories.unarchive'),
+              disabled: !githubWebUrl(row.repository) || !row.github?.isArchived,
+              onClick: () => setArchiveTarget({ repository: row.repository, archived: false })
             },
             {
               label: t('repositories.deleteRecycle'),
@@ -553,6 +584,21 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
           deleteTarget?.recycle
             ? t('repositories.deleteRecycleBody', { name: deleteTarget?.repository?.name, path: deleteTarget?.repository?.path })
             : t('repositories.deletePermanentBody', { name: deleteTarget?.repository?.name, path: deleteTarget?.repository?.path })
+        }
+      />
+
+      <ConfirmModal
+        open={Boolean(archiveTarget)}
+        onCancel={() => !archiving && setArchiveTarget(null)}
+        onConfirm={confirmArchive}
+        busy={archiving}
+        tone={archiveTarget?.archived ? 'danger' : 'primary'}
+        title={archiveTarget?.archived ? t('repositories.archiveTitle') : t('repositories.unarchiveTitle')}
+        confirmLabel={archiveTarget?.archived ? t('repositories.archive') : t('repositories.unarchive')}
+        body={
+          archiveTarget?.archived
+            ? t('repositories.archiveBody', { name: archiveTarget?.repository?.name })
+            : t('repositories.unarchiveBody', { name: archiveTarget?.repository?.name })
         }
       />
     </div>

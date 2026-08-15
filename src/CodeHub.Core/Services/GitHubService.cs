@@ -123,9 +123,63 @@ namespace CodeHub.Core.Services
             return snapshot;
         }
 
+        /// <summary>
+        /// Archive or unarchive a repository on GitHub (PATCH /repos/{owner}/{repo}).
+        /// Requires a configured token with admin rights on the repository.
+        /// </summary>
+        /// <param name="repository">Repository.</param>
+        /// <param name="archived">True to archive, false to unarchive.</param>
+        /// <param name="token">Cancellation token.</param>
+        public async Task SetArchivedAsync(Repository repository, bool archived, CancellationToken token = default)
+        {
+            if (repository == null) throw new ArgumentNullException(nameof(repository));
+            if (!_Settings.IsConfigured())
+                throw new InvalidOperationException("A GitHub personal access token is required to archive or unarchive a repository.");
+
+            GitHubRepoRef repoRef = GitHubRepoRef.Parse(repository.RemoteUrl);
+            if (repoRef == null && !String.IsNullOrEmpty(_Settings.Owner))
+                repoRef = new GitHubRepoRef { Owner = _Settings.Owner, Repo = repository.Name };
+            if (repoRef == null)
+                throw new InvalidOperationException("This repository has no GitHub remote.");
+
+            HttpRequestMessage request = new HttpRequestMessage(
+                new HttpMethod("PATCH"), "repos/" + repoRef.Owner + "/" + repoRef.Repo)
+            {
+                Content = new StringContent("{\"archived\":" + (archived ? "true" : "false") + "}",
+                    System.Text.Encoding.UTF8, "application/json")
+            };
+
+            HttpResponseMessage response = await _Http.SendAsync(request, token).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                string body = await response.Content.ReadAsStringAsync(token).ConfigureAwait(false);
+                string detail = ExtractMessage(body);
+                throw new InvalidOperationException(
+                    "GitHub rejected the request (" + (int)response.StatusCode + "). " +
+                    (String.IsNullOrEmpty(detail) ? "Ensure the token has admin rights on the repository." : detail));
+            }
+        }
+
         #endregion
 
         #region Private-Methods
+
+        private static string ExtractMessage(string body)
+        {
+            if (String.IsNullOrEmpty(body)) return null;
+            try
+            {
+                using (JsonDocument doc = JsonDocument.Parse(body))
+                {
+                    if (doc.RootElement.TryGetProperty("message", out JsonElement m)) return m.GetString();
+                }
+            }
+            catch (Exception)
+            {
+                // not JSON
+            }
+            return null;
+        }
 
         private async Task FetchDependabotAsync(GitHubRepoRef repoRef, GitHubSnapshot snapshot, CancellationToken token)
         {

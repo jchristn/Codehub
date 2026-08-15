@@ -51,6 +51,7 @@ namespace CodeHub.Server.Routes
             server.Routes.PostAuthentication.Parameter.Add(HttpMethod.POST, "/v1.0/api/repositories/{id}/exclude", ExcludeAsync);
             server.Routes.PostAuthentication.Parameter.Add(HttpMethod.POST, "/v1.0/api/repositories/{id}/open", OpenAsync);
             server.Routes.PostAuthentication.Parameter.Add(HttpMethod.POST, "/v1.0/api/repositories/{id}/run-agent", RunAgentAsync);
+            server.Routes.PostAuthentication.Parameter.Add(HttpMethod.POST, "/v1.0/api/repositories/{id}/archive", ArchiveAsync);
             server.Routes.PostAuthentication.Parameter.Add(HttpMethod.POST, "/v1.0/api/repositories/{id}/delete", DeleteRepoAsync);
         }
 
@@ -286,6 +287,45 @@ namespace CodeHub.Server.Routes
             {
                 _Ctx.Logging.Warn("[RepositoryRoutes] run-agent failed: " + e.Message);
                 await RouteHelper.SendJson(ctx, _Ctx.Serializer, 500, new ErrorResponse("LaunchFailed", e.Message)).ConfigureAwait(false);
+            }
+        }
+
+        private async Task ArchiveAsync(HttpContextBase ctx)
+        {
+            string id = ctx.Request.Url.Parameters["id"];
+            Repository repo = await _Ctx.Db.Repositories.ReadAsync(id, ctx.Token).ConfigureAwait(false);
+            if (repo == null)
+            {
+                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 404, new ErrorResponse("NotFound", "Repository not found.")).ConfigureAwait(false);
+                return;
+            }
+
+            string body = ctx.Request.DataAsString;
+            ArchiveRequest request = String.IsNullOrEmpty(body) ? null : _Ctx.Serializer.DeserializeJson<ArchiveRequest>(body);
+            bool archived = request?.Archived ?? false;
+
+            try
+            {
+                await _Ctx.GitHub.SetArchivedAsync(repo, archived, ctx.Token).ConfigureAwait(false);
+
+                // Reflect the new state immediately so the UI updates without a full rescan.
+                GitHubSnapshot snap = await _Ctx.Db.GitHubSnapshots.ReadByRepositoryAsync(id, ctx.Token).ConfigureAwait(false)
+                    ?? new GitHubSnapshot { RepositoryId = id };
+                snap.IsArchived = archived;
+                await _Ctx.Db.GitHubSnapshots.UpsertAsync(snap, ctx.Token).ConfigureAwait(false);
+
+                _Ctx.Logging.Info("[RepositoryRoutes] " + (archived ? "archived " : "unarchived ") + repo.Name + " on GitHub");
+                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 200,
+                    new Dictionary<string, object> { { "archived", archived } }).ConfigureAwait(false);
+            }
+            catch (InvalidOperationException e)
+            {
+                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 400, new ErrorResponse("ArchiveFailed", e.Message)).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                _Ctx.Logging.Warn("[RepositoryRoutes] archive failed for " + repo.Name + ": " + e.Message);
+                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 500, new ErrorResponse("ArchiveFailed", e.Message)).ConfigureAwait(false);
             }
         }
 

@@ -124,6 +124,13 @@ class ApiClient {
     });
   }
 
+  /** Archive or unarchive a repository on GitHub (requires a configured PAT with admin rights). */
+  async setArchived(id, archived) {
+    return this._request('POST', `/v1.0/api/repositories/${encodeURIComponent(id)}/archive`, {
+      body: { archived }
+    });
+  }
+
   /** Launch an agent in a repository with a (possibly edited) prompt — a custom action. */
   async runAgent(id, { agent, dangerous, prompt }) {
     return this._request('POST', `/v1.0/api/repositories/${encodeURIComponent(id)}/run-agent`, {
