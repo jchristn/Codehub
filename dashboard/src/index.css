@@ -339,10 +339,10 @@ button.tiny,
 .sidebar-nav {
   flex: 1;
   overflow-y: auto;
-  padding: var(--spacing-md) var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-xs);
 }
 .nav-group {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
 }
 .nav-group-label {
   font-size: var(--font-size-xs);
@@ -355,13 +355,13 @@ button.tiny,
 .nav-item {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: 0.5rem 0.6rem;
+  gap: var(--spacing-xs);
+  padding: 0.3rem 0.45rem;
   border-radius: var(--radius-md);
   color: var(--color-text-secondary);
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-sm);
   font-weight: 500;
-  min-height: 36px;
+  min-height: 28px;
 }
 .nav-item:hover {
   background-color: var(--color-surface-hover);
@@ -374,9 +374,9 @@ button.tiny,
   box-shadow: inset 3px 0 0 var(--color-primary);
 }
 .nav-icon {
-  width: 20px;
+  width: 18px;
   text-align: center;
-  font-size: 1rem;
+  font-size: 0.95rem;
   flex-shrink: 0;
 }
 .sidebar.collapsed .nav-item {
