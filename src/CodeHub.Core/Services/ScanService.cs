@@ -41,6 +41,14 @@ namespace CodeHub.Core.Services
         /// </summary>
         public DateTime? NextScheduledScanUtc { get; set; } = null;
 
+        /// <summary>
+        /// Per-repository progress for the in-flight scan, or null when idle.
+        /// </summary>
+        public List<ScanRepoProgress> CurrentRepositories
+        {
+            get { return _CurrentRepos; }
+        }
+
         #endregion
 
         #region Private-Members
@@ -56,6 +64,7 @@ namespace CodeHub.Core.Services
 
         private volatile bool _IsScanning = false;
         private volatile ScanRun _CurrentRun = null;
+        private volatile List<ScanRepoProgress> _CurrentRepos = null;
 
         #endregion
 
@@ -123,6 +132,22 @@ namespace CodeHub.Core.Services
                 // re-collection so every column is repopulated, bypassing the git-HEAD delta skip.
                 bool force = trigger == ScanTriggerEnum.Manual || !String.IsNullOrEmpty(repositoryId);
 
+                // Per-repository progress, exposed on the scan status for the Scans page.
+                List<ScanRepoProgress> progress = new List<ScanRepoProgress>();
+                Dictionary<string, ScanRepoProgress> progressByPath = new Dictionary<string, ScanRepoProgress>();
+                foreach (string root in roots)
+                {
+                    ScanRepoProgress p = new ScanRepoProgress
+                    {
+                        Path = root,
+                        Name = Path.GetFileName(root.TrimEnd('\\', '/')),
+                        Status = "Pending"
+                    };
+                    progress.Add(p);
+                    progressByPath[root] = p;
+                }
+                _CurrentRepos = progress;
+
                 int scanned = 0;
                 SemaphoreSlim gate = new SemaphoreSlim(_Settings.Scan.MaxConcurrency);
                 List<Task> tasks = new List<Task>();
@@ -130,14 +155,18 @@ namespace CodeHub.Core.Services
                 foreach (string root in roots)
                 {
                     await gate.WaitAsync(token).ConfigureAwait(false);
+                    ScanRepoProgress repoProgress = progressByPath.TryGetValue(root, out ScanRepoProgress rp) ? rp : null;
                     tasks.Add(Task.Run(async () =>
                     {
+                        if (repoProgress != null) repoProgress.Status = "Scanning";
                         try
                         {
                             await ProcessRepositoryAsync(root, excluded, force, token).ConfigureAwait(false);
+                            if (repoProgress != null) repoProgress.Status = "Done";
                         }
                         catch (Exception e)
                         {
+                            if (repoProgress != null) repoProgress.Status = "Failed";
                             _Logging.Warn(_Header + "failed to scan " + root + ": " + e.Message);
                         }
                         finally
@@ -169,6 +198,7 @@ namespace CodeHub.Core.Services
             {
                 _IsScanning = false;
                 _CurrentRun = null;
+                _CurrentRepos = null;
                 _RunGate.Release();
             }
 

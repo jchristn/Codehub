@@ -900,6 +900,35 @@ button.tiny,
 .scan-progress-bar { height: 12px; background-color: var(--color-surface-alt); border-radius: var(--radius-sm); overflow: hidden; }
 .scan-progress-fill { display: block; height: 100%; background-color: var(--color-primary); transition: width 0.4s; }
 .scan-progress-meta { display: flex; justify-content: space-between; font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+.scan-repo-list {
+  list-style: none;
+  margin: var(--spacing-sm) 0 0;
+  padding: 0;
+  max-height: 55vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.scan-repo {
+  display: grid;
+  grid-template-columns: 1.4rem 1fr auto;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 0.3rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+}
+.scan-repo:hover { background-color: var(--color-surface-alt); }
+.scan-repo-icon { text-align: center; font-weight: 700; }
+.scan-repo-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scan-repo-status { font-size: var(--font-size-xs); color: var(--color-text-muted); }
+.scan-repo-pending .scan-repo-icon { color: var(--color-text-muted); }
+.scan-repo-pending .scan-repo-name { color: var(--color-text-secondary); }
+.scan-repo-scanning .scan-repo-icon { color: var(--color-primary); display: inline-block; animation: spin 1s linear infinite; }
+.scan-repo-done .scan-repo-icon { color: var(--color-success, #15803d); }
+.scan-repo-failed .scan-repo-icon { color: var(--color-danger); }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 /* ---------------------------------------------------------------- Modal */
 

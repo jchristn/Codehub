@@ -29,6 +29,20 @@ function ScansView({ apiClient, scanStatus, scanNonce, isScanning, onScanNow }) 
   }, [load, scanNonce, isScanning]);
 
   const current = scanStatus?.current;
+  const repoProgress = Array.isArray(scanStatus?.repositories) ? scanStatus.repositories : [];
+
+  const statusIcon = (status) => {
+    switch ((status || 'pending').toLowerCase()) {
+      case 'done':
+        return '✓';
+      case 'scanning':
+        return '⟳';
+      case 'failed':
+        return '✗';
+      default:
+        return '–';
+    }
+  };
 
   const columns = [
     { key: 'trigger', label: t('scans.colTrigger'), render: (r) => r.trigger },
@@ -74,6 +88,20 @@ function ScansView({ apiClient, scanStatus, scanNonce, isScanning, onScanNow }) 
               <span>{t('scans.progress', { done: current.reposScanned || 0, total: current.reposTotal || 0 })}</span>
               <span>{progressPct}%</span>
             </div>
+            {repoProgress.length > 0 && (
+              <ul className="scan-repo-list">
+                {repoProgress.map((r) => {
+                  const s = (r.status || 'pending').toLowerCase();
+                  return (
+                    <li key={r.path} className={`scan-repo scan-repo-${s}`} title={r.path}>
+                      <span className="scan-repo-icon" aria-hidden="true">{statusIcon(r.status)}</span>
+                      <span className="scan-repo-name">{r.name}</span>
+                      <span className="scan-repo-status">{t(`scans.status.${s}`)}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
         ) : (
           <p className="muted">

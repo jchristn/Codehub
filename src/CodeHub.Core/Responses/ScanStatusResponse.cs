@@ -1,6 +1,7 @@
 namespace CodeHub.Core.Responses
 {
     using System;
+    using System.Collections.Generic;
     using CodeHub.Core.Models;
 
     /// <summary>
@@ -39,6 +40,11 @@ namespace CodeHub.Core.Responses
         /// Number of repositories known to the system.
         /// </summary>
         public int RepositoryCount { get; set; } = 0;
+
+        /// <summary>
+        /// Per-repository progress for the in-flight scan, or null when idle.
+        /// </summary>
+        public List<ScanRepoProgress> Repositories { get; set; } = null;
 
         #endregion
     }

@@ -97,7 +97,8 @@ namespace CodeHub.Server.Routes
                 Latest = latest,
                 LastScannedUtc = latest?.CompletedUtc,
                 NextScanUtc = _Ctx.Scan.NextScheduledScanUtc,
-                RepositoryCount = repoCount
+                RepositoryCount = repoCount,
+                Repositories = _Ctx.Scan.CurrentRepositories
             };
             await RouteHelper.SendJson(ctx, _Ctx.Serializer, 200, response).ConfigureAwait(false);
         }
