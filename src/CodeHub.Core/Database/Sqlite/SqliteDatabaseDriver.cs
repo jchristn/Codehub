@@ -57,6 +57,7 @@ namespace CodeHub.Core.Database.Sqlite
             RequestHistory = new SqliteRequestHistoryMethods(this);
             CustomActions = new SqliteCustomActionMethods(this);
             Branches = new SqliteBranchMethods(this);
+            Annotations = new SqliteAnnotationMethods(this);
         }
 
         #endregion

@@ -48,6 +48,9 @@ namespace CodeHub.Server.Routes
             server.Routes.PostAuthentication.Static.Add(HttpMethod.GET, "/v1.0/api/overview", OverviewAsync);
             server.Routes.PostAuthentication.Parameter.Add(HttpMethod.GET, "/v1.0/api/repositories/{id}", DetailAsync);
             server.Routes.PostAuthentication.Parameter.Add(HttpMethod.GET, "/v1.0/api/repositories/{id}/branches", BranchesAsync);
+            server.Routes.PostAuthentication.Parameter.Add(HttpMethod.GET, "/v1.0/api/repositories/{id}/annotations", ListAnnotationsAsync);
+            server.Routes.PostAuthentication.Parameter.Add(HttpMethod.PUT, "/v1.0/api/repositories/{id}/annotations", SetAnnotationAsync);
+            server.Routes.PostAuthentication.Parameter.Add(HttpMethod.DELETE, "/v1.0/api/repositories/{id}/annotations/{column}", DeleteAnnotationAsync);
             server.Routes.PostAuthentication.Parameter.Add(HttpMethod.POST, "/v1.0/api/repositories/{id}/include", IncludeAsync);
             server.Routes.PostAuthentication.Parameter.Add(HttpMethod.POST, "/v1.0/api/repositories/{id}/exclude", ExcludeAsync);
             server.Routes.PostAuthentication.Parameter.Add(HttpMethod.POST, "/v1.0/api/repositories/{id}/open", OpenAsync);
@@ -77,6 +80,14 @@ namespace CodeHub.Server.Routes
             Dictionary<string, GitHubSnapshot> githubByRepo = allGitHub
                 .GroupBy(g => g.RepositoryId)
                 .ToDictionary(g => g.Key, g => g.First());
+
+            // Manual overrides: replace computed signal/overall values so the shown value —
+            // and any filtering/sorting — uses the override.
+            List<Annotation> allAnnotations = await _Ctx.Db.Annotations.EnumerateAllAsync(ctx.Token).ConfigureAwait(false);
+            Dictionary<string, List<Annotation>> annotationsByRepo = allAnnotations
+                .GroupBy(a => a.RepositoryId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+            ApplyAnnotations(repos, signalsByRepo, annotationsByRepo);
 
             string health = RouteHelper.Query(ctx, "health");
             string language = RouteHelper.Query(ctx, "language");
@@ -155,7 +166,8 @@ namespace CodeHub.Server.Routes
                     Repository = repo,
                     Signals = signalsByRepo.TryGetValue(repo.Id, out List<Signal> s) ? s : new List<Signal>(),
                     GitHub = githubByRepo.TryGetValue(repo.Id, out GitHubSnapshot ghSnap) ? ghSnap : null,
-                    TargetFrameworks = frameworksByRepo.TryGetValue(repo.Id, out List<string> fw) ? fw : new List<string>()
+                    TargetFrameworks = frameworksByRepo.TryGetValue(repo.Id, out List<string> fw) ? fw : new List<string>(),
+                    Annotations = annotationsByRepo.TryGetValue(repo.Id, out List<Annotation> anns) ? anns : new List<Annotation>()
                 };
                 items.Add(item);
             }
@@ -254,6 +266,64 @@ namespace CodeHub.Server.Routes
                 _Ctx.Logging.Warn("[RepositoryRoutes] open failed: " + e.Message);
                 await RouteHelper.SendJson(ctx, _Ctx.Serializer, 500, new ErrorResponse("LaunchFailed", e.Message)).ConfigureAwait(false);
             }
+        }
+
+        private static readonly HashSet<string> _OverridableColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "TestInfra", "Telemetry", "OutdatedDependencies", "Vulnerabilities", "IssuesAndPullRequests", "Overall"
+        };
+        private static readonly HashSet<string> _OverrideStatuses = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Green", "Yellow", "Red", "NotApplicable", "Unknown"
+        };
+
+        private async Task ListAnnotationsAsync(HttpContextBase ctx)
+        {
+            string id = ctx.Request.Url.Parameters["id"];
+            List<Annotation> annotations = await _Ctx.Db.Annotations.EnumerateByRepositoryAsync(id, ctx.Token).ConfigureAwait(false);
+            await RouteHelper.SendJson(ctx, _Ctx.Serializer, 200, annotations).ConfigureAwait(false);
+        }
+
+        private async Task SetAnnotationAsync(HttpContextBase ctx)
+        {
+            string id = ctx.Request.Url.Parameters["id"];
+            Repository repo = await _Ctx.Db.Repositories.ReadAsync(id, ctx.Token).ConfigureAwait(false);
+            if (repo == null)
+            {
+                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 404, new ErrorResponse("NotFound", "Repository not found.")).ConfigureAwait(false);
+                return;
+            }
+
+            string body = ctx.Request.DataAsString;
+            AnnotationRequest request = String.IsNullOrEmpty(body) ? null : _Ctx.Serializer.DeserializeJson<AnnotationRequest>(body);
+            if (request == null || String.IsNullOrWhiteSpace(request.Column) || !_OverridableColumns.Contains(request.Column))
+            {
+                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 400, new ErrorResponse("BadRequest", "A valid column is required.")).ConfigureAwait(false);
+                return;
+            }
+            if (String.IsNullOrWhiteSpace(request.Status) || !_OverrideStatuses.Contains(request.Status))
+            {
+                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 400, new ErrorResponse("BadRequest", "A valid status is required.")).ConfigureAwait(false);
+                return;
+            }
+
+            Annotation annotation = new Annotation
+            {
+                RepositoryId = id,
+                Column = request.Column.Trim(),
+                Status = request.Status.Trim(),
+                Note = request.Note ?? String.Empty
+            };
+            await _Ctx.Db.Annotations.UpsertAsync(annotation, ctx.Token).ConfigureAwait(false);
+            await RouteHelper.SendJson(ctx, _Ctx.Serializer, 200, annotation).ConfigureAwait(false);
+        }
+
+        private async Task DeleteAnnotationAsync(HttpContextBase ctx)
+        {
+            string id = ctx.Request.Url.Parameters["id"];
+            string column = ctx.Request.Url.Parameters["column"];
+            await _Ctx.Db.Annotations.DeleteAsync(id, column, ctx.Token).ConfigureAwait(false);
+            await RouteHelper.SendJson(ctx, _Ctx.Serializer, 200, new Dictionary<string, object> { { "deleted", true } }).ConfigureAwait(false);
         }
 
         private async Task BranchesAsync(HttpContextBase ctx)
@@ -429,6 +499,34 @@ namespace CodeHub.Server.Routes
             overview.IsScanning = _Ctx.Scan.IsScanning;
 
             await RouteHelper.SendJson(ctx, _Ctx.Serializer, 200, overview).ConfigureAwait(false);
+        }
+
+        private static void ApplyAnnotations(
+            List<Repository> repos,
+            Dictionary<string, List<Signal>> signalsByRepo,
+            Dictionary<string, List<Annotation>> annotationsByRepo)
+        {
+            Dictionary<string, Repository> repoById = repos.ToDictionary(r => r.Id);
+            foreach (KeyValuePair<string, List<Annotation>> entry in annotationsByRepo)
+            {
+                foreach (Annotation ann in entry.Value)
+                {
+                    if (!Enum.TryParse(ann.Status, true, out HealthStatusEnum status)) continue;
+
+                    if (String.Equals(ann.Column, "Overall", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (repoById.TryGetValue(entry.Key, out Repository repo)) repo.OverallHealth = status;
+                        continue;
+                    }
+
+                    if (!Enum.TryParse(ann.Column, true, out SignalTypeEnum type)) continue;
+                    if (signalsByRepo.TryGetValue(entry.Key, out List<Signal> sigs))
+                    {
+                        Signal sig = sigs.FirstOrDefault(s => s.SignalType == type);
+                        if (sig != null) sig.Status = status;
+                    }
+                }
+            }
         }
 
         private static List<string> RollupFrameworks(IEnumerable<Project> projects)

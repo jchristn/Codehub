@@ -16,6 +16,7 @@ import InvokeCustomActionModal from '../components/InvokeCustomActionModal';
 import BranchesModal from '../components/BranchesModal';
 import SelectAllCheckbox from '../components/SelectAllCheckbox';
 import BulkCustomActionModal from '../components/BulkCustomActionModal';
+import AnnotationsModal from '../components/AnnotationsModal';
 import useDebounce from '../hooks/useDebounce';
 import { SIGNAL_TYPES, STORAGE, DEFAULT_PAGE_SIZE, AUTO_REFRESH_OPTIONS, DEFAULT_AUTO_REFRESH } from '../utils/constants';
 import { formatRelativeTime, formatDateTime } from '../i18n/formatters';
@@ -77,6 +78,7 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
   const [customActions, setCustomActions] = useState([]);
   const [invoke, setInvoke] = useState(null); // { repository, action }
   const [branchesRepo, setBranchesRepo] = useState(null);
+  const [annotateRepo, setAnnotateRepo] = useState(null);
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [showBulk, setShowBulk] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(() => {
@@ -298,6 +300,13 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
   );
 
   const signalFor = (row, type) => (row.signals || []).find((s) => s.signalType === type);
+  const annotationFor = (row, column) => (row.annotations || []).find((a) => a.column === column);
+  const overrideMark = (ann) =>
+    ann ? (
+      <span className="override-mark" title={t('annotations.overriddenNote', { note: ann.note || '' })}>
+        *
+      </span>
+    ) : null;
 
   // Filter-control factories (read/write the live filter state).
   const textFilter = (key, placeholder) => (
@@ -356,7 +365,12 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
     className: 'cell-center cell-signal',
     render: (row) => {
       const s = signalFor(row, sig.type);
-      return <StatusBadge status={s?.status || 'Unknown'} detail={s?.detail} short />;
+      return (
+        <span className="signal-cell">
+          <StatusBadge status={s?.status || 'Unknown'} detail={s?.detail} short />
+          {overrideMark(annotationFor(row, sig.type))}
+        </span>
+      );
     },
     renderFilter: () =>
       sig.type === 'IssuesAndPullRequests'
@@ -395,6 +409,7 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
           items={[
             { label: t('common.viewDetails'), onClick: () => setSelectedId(row.repository?.id) },
             { label: t('branches.view'), onClick: () => setBranchesRepo(row.repository) },
+            { label: t('annotations.action'), onClick: () => setAnnotateRepo(row.repository) },
             { label: t('repositories.rescanNow'), onClick: () => rescanRepo(row.repository) },
             {
               label: t('actions.openGithub'),
@@ -572,7 +587,12 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
       sortKey: 'overall',
       className: 'cell-center',
       renderFilter: () => selectFilter('overall', RYG),
-      render: (row) => <StatusBadge status={row.repository?.overallHealth} />
+      render: (row) => (
+        <span className="signal-cell">
+          <StatusBadge status={row.repository?.overallHealth} />
+          {overrideMark(annotationFor(row, 'Overall'))}
+        </span>
+      )
     }
   ];
 
@@ -699,6 +719,15 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
 
       {branchesRepo && (
         <BranchesModal apiClient={apiClient} repository={branchesRepo} onClose={() => setBranchesRepo(null)} />
+      )}
+
+      {annotateRepo && (
+        <AnnotationsModal
+          apiClient={apiClient}
+          repository={annotateRepo}
+          onClose={() => setAnnotateRepo(null)}
+          onDone={load}
+        />
       )}
 
       {showBulk && (

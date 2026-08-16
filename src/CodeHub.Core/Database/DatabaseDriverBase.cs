@@ -70,6 +70,11 @@ namespace CodeHub.Core.Database
         /// </summary>
         public IBranchMethods Branches { get; protected set; }
 
+        /// <summary>
+        /// Annotation (value override) data access.
+        /// </summary>
+        public IAnnotationMethods Annotations { get; protected set; }
+
         #endregion
 
         #region Public-Methods

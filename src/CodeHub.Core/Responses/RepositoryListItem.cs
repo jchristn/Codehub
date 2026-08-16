@@ -31,6 +31,11 @@ namespace CodeHub.Core.Responses
         /// </summary>
         public List<string> TargetFrameworks { get; set; } = new List<string>();
 
+        /// <summary>
+        /// Manual value overrides applied to this repository's columns, if any.
+        /// </summary>
+        public List<Annotation> Annotations { get; set; } = new List<Annotation>();
+
         #endregion
     }
 }

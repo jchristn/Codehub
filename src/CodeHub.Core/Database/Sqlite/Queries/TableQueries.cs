@@ -28,7 +28,8 @@ namespace CodeHub.Core.Database.Sqlite.Queries
                     ScanSelections,
                     RequestHistory,
                     CustomActions,
-                    Branches
+                    Branches,
+                    Annotations
                 };
             }
         }
@@ -216,6 +217,22 @@ CREATE TABLE IF NOT EXISTS branches (
     createdutc TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_branches_repoid ON branches(repoid);
+";
+
+        /// <summary>
+        /// Annotations table (manual per-repository value overrides with a note).
+        /// </summary>
+        public static readonly string Annotations = @"
+CREATE TABLE IF NOT EXISTS annotations (
+    id TEXT PRIMARY KEY,
+    repoid TEXT NOT NULL,
+    signalcolumn TEXT NOT NULL,
+    status TEXT NOT NULL,
+    note TEXT,
+    createdutc TEXT NOT NULL,
+    UNIQUE(repoid, signalcolumn)
+);
+CREATE INDEX IF NOT EXISTS idx_annotations_repoid ON annotations(repoid);
 ";
 
         /// <summary>

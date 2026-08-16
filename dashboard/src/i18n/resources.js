@@ -358,6 +358,18 @@ const en = {
     message: "The page you're looking for doesn't exist or has moved.",
     back: 'Back to dashboard'
   },
+  annotations: {
+    action: 'Override Values',
+    title: 'Override values',
+    help: 'Override a computed value with the one you want shown, and add a note explaining why. Overrides are also used for filtering and sorting.',
+    colColumn: 'Column',
+    colOverride: 'Override to',
+    colNote: 'Note',
+    noOverride: 'No override',
+    notePlaceholder: 'Why is this overridden?',
+    saved: 'Overrides saved.',
+    overriddenNote: 'Overridden — {{note}}'
+  },
   bulkAction: {
     selectAll: 'Select all',
     selectRow: 'Select repository',
@@ -821,6 +833,18 @@ const es = {
     message: 'La página que buscas no existe o se ha movido.',
     back: 'Volver al panel'
   },
+  annotations: {
+    action: 'Anular valores',
+    title: 'Anular valores',
+    help: 'Reemplaza un valor calculado por el que quieres mostrar y añade una nota que explique por qué. Las anulaciones también se usan para filtrar y ordenar.',
+    colColumn: 'Columna',
+    colOverride: 'Anular a',
+    colNote: 'Nota',
+    noOverride: 'Sin anulación',
+    notePlaceholder: '¿Por qué se anula esto?',
+    saved: 'Anulaciones guardadas.',
+    overriddenNote: 'Anulado — {{note}}'
+  },
   bulkAction: {
     selectAll: 'Seleccionar todo',
     selectRow: 'Seleccionar repositorio',
@@ -1229,6 +1253,18 @@ const fr = {
     title: 'Page introuvable',
     message: "La page que vous recherchez n'existe pas ou a été déplacée.",
     back: 'Retour au tableau de bord'
+  },
+  annotations: {
+    action: 'Remplacer les valeurs',
+    title: 'Remplacer les valeurs',
+    help: 'Remplacez une valeur calculée par celle que vous voulez afficher et ajoutez une note expliquant pourquoi. Les remplacements servent aussi au filtrage et au tri.',
+    colColumn: 'Colonne',
+    colOverride: 'Remplacer par',
+    colNote: 'Note',
+    noOverride: 'Aucun remplacement',
+    notePlaceholder: 'Pourquoi ce remplacement ?',
+    saved: 'Remplacements enregistrés.',
+    overriddenNote: 'Remplacé — {{note}}'
   },
   bulkAction: {
     selectAll: 'Tout sélectionner',
@@ -1639,6 +1675,18 @@ const de = {
     message: 'Die gesuchte Seite existiert nicht oder wurde verschoben.',
     back: 'Zurück zum Dashboard'
   },
+  annotations: {
+    action: 'Werte überschreiben',
+    title: 'Werte überschreiben',
+    help: 'Ersetzen Sie einen berechneten Wert durch den anzuzeigenden Wert und fügen Sie eine Notiz hinzu, die erklärt, warum. Überschreibungen werden auch zum Filtern und Sortieren verwendet.',
+    colColumn: 'Spalte',
+    colOverride: 'Überschreiben mit',
+    colNote: 'Notiz',
+    noOverride: 'Keine Überschreibung',
+    notePlaceholder: 'Warum wird das überschrieben?',
+    saved: 'Überschreibungen gespeichert.',
+    overriddenNote: 'Überschrieben — {{note}}'
+  },
   bulkAction: {
     selectAll: 'Alle auswählen',
     selectRow: 'Repository auswählen',
@@ -2047,6 +2095,18 @@ const pt = {
     title: 'Página não encontrada',
     message: 'A página que você procura não existe ou foi movida.',
     back: 'Voltar ao painel'
+  },
+  annotations: {
+    action: 'Substituir valores',
+    title: 'Substituir valores',
+    help: 'Substitua um valor calculado pelo que deseja exibir e adicione uma nota explicando o motivo. As substituições também são usadas para filtrar e ordenar.',
+    colColumn: 'Coluna',
+    colOverride: 'Substituir por',
+    colNote: 'Nota',
+    noOverride: 'Sem substituição',
+    notePlaceholder: 'Por que isto foi substituído?',
+    saved: 'Substituições salvas.',
+    overriddenNote: 'Substituído — {{note}}'
   },
   bulkAction: {
     selectAll: 'Selecionar tudo',

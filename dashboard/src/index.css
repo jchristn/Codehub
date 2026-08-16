@@ -755,6 +755,19 @@ button.tiny,
 /* The repositories table can be wide (many columns) — let it use the full workspace. */
 .repositories-view { max-width: none; }
 
+.signal-cell { display: inline-flex; align-items: center; gap: 0.15rem; }
+.override-mark {
+  color: var(--color-primary);
+  font-weight: 700;
+  cursor: help;
+  font-size: 1rem;
+  line-height: 1;
+}
+.annotations-table { width: 100%; }
+.annotations-table td, .annotations-table th { padding: 0.4rem 0.5rem; }
+.annotations-table select, .annotation-note { width: 100%; }
+.annotation-note:disabled { opacity: 0.5; }
+
 .branch-current {
   display: inline-block;
   margin-left: var(--spacing-sm);

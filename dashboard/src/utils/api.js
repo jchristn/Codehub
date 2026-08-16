@@ -108,6 +108,22 @@ class ApiClient {
     return this._request('GET', `/v1.0/api/repositories/${encodeURIComponent(id)}/branches`);
   }
 
+  // ---------------------------------------------------------------- Annotations (value overrides)
+
+  async getAnnotations(id) {
+    return this._request('GET', `/v1.0/api/repositories/${encodeURIComponent(id)}/annotations`);
+  }
+
+  async setAnnotation(id, { column, status, note }) {
+    return this._request('PUT', `/v1.0/api/repositories/${encodeURIComponent(id)}/annotations`, {
+      body: { column, status, note }
+    });
+  }
+
+  async deleteAnnotation(id, column) {
+    return this._request('DELETE', `/v1.0/api/repositories/${encodeURIComponent(id)}/annotations/${encodeURIComponent(column)}`);
+  }
+
   async includeRepository(id) {
     return this._request('POST', `/v1.0/api/repositories/${encodeURIComponent(id)}/include`);
   }

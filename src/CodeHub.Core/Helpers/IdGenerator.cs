@@ -117,6 +117,15 @@ namespace CodeHub.Core.Helpers
             return Generate(Constants.BranchPrefix);
         }
 
+        /// <summary>
+        /// Generate an annotation identifier.
+        /// </summary>
+        /// <returns>Annotation identifier.</returns>
+        public static string GenerateAnnotationId()
+        {
+            return Generate(Constants.AnnotationPrefix);
+        }
+
         #endregion
     }
 }

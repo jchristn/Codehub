@@ -82,5 +82,10 @@ $$ |      $$ |  $$ |$$ |  $$ |$$   ____|$$ |  $$ |$$ |  $$ |$$ |  $$ |
         /// Branch identifier prefix.
         /// </summary>
         public const string BranchPrefix = "br_";
+
+        /// <summary>
+        /// Annotation (value override) identifier prefix.
+        /// </summary>
+        public const string AnnotationPrefix = "ann_";
     }
 }
