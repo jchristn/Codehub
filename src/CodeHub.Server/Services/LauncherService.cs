@@ -126,18 +126,24 @@ namespace CodeHub.Server.Services
         {
             string binary;
             string dangerFlag;
+            string promptFlag = null; // flag preceding the prompt; null means pass it positionally
             switch (agent.Trim().ToLowerInvariant())
             {
                 case "claude": binary = "claude"; dangerFlag = "--dangerously-skip-permissions"; break;
                 case "codex": binary = "codex"; dangerFlag = "--yolo"; break;
-                case "mux": binary = "mux"; dangerFlag = "--yolo"; break;
+                // mux needs --prompt to skip the splash screen and stay interactive.
+                case "mux": binary = "mux"; dangerFlag = "--yolo"; promptFlag = "--prompt"; break;
                 case "opencode": binary = "opencode"; dangerFlag = null; break;
                 default: throw new ArgumentException("Unknown agent: " + agent);
             }
 
             string command = binary;
             if (dangerous && dangerFlag != null) command += " " + dangerFlag;
-            if (!String.IsNullOrWhiteSpace(prompt)) command += " \"" + EscapePromptForBatch(prompt) + "\"";
+            if (!String.IsNullOrWhiteSpace(prompt))
+            {
+                string quoted = "\"" + EscapePromptForBatch(prompt) + "\"";
+                command += promptFlag != null ? " " + promptFlag + " " + quoted : " " + quoted;
+            }
             return command;
         }
 
