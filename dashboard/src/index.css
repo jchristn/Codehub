@@ -1083,6 +1083,16 @@ button.tiny,
   box-shadow: var(--shadow-lg);
   padding: 0.25rem;
 }
+.action-menu-parent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  cursor: default;
+}
+.action-menu-parent.active-sub { background-color: var(--color-surface-hover); }
+.submenu-caret { font-size: 0.7em; opacity: 0.7; }
+.action-menu-flyout { z-index: 2600; }
 .action-menu-item {
   display: block;
   width: 100%;

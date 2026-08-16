@@ -451,11 +451,13 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
             },
             ...(customActions.length > 0
               ? [
-                  { header: true, label: t('customActions.sectionTitle') },
-                  ...customActions.map((a) => ({
-                    label: a.name,
-                    onClick: () => setInvoke({ repository: row.repository, action: a })
-                  }))
+                  {
+                    label: t('customActions.sectionTitle'),
+                    submenu: customActions.map((a) => ({
+                      label: a.name,
+                      onClick: () => setInvoke({ repository: row.repository, action: a })
+                    }))
+                  }
                 ]
               : [])
           ]}
