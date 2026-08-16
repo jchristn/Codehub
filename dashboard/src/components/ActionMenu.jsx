@@ -131,7 +131,7 @@ function ActionMenu({ items }) {
           onMouseLeave={scheduleCloseSub}
         >
           <span>{item.label}</span>
-          <span className="submenu-caret" aria-hidden="true">▸</span>
+          <span className="submenu-caret" aria-hidden="true">&gt;</span>
         </div>
       );
     }
