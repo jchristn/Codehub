@@ -277,7 +277,7 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
     async (repo) => {
       try {
         await apiClient.startScan(repo.id);
-        toast.info(t('repositories.rescanStarted', { name: repo.name }));
+        toast.info(t('scans.scanningOne', { name: repo.name }));
         // Single-repo scans are quick; poll for completion, then refresh so the
         // freshly-collected data (branch count, etc.) shows without waiting for auto-refresh.
         const deadline = Date.now() + 60000;
