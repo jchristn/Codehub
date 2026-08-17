@@ -97,6 +97,23 @@ namespace CodeHub.Core.Services.Collectors
                 project.HasRadiant = SourceMentions(Path.GetDirectoryName(csprojPath), "RadiantHost");
             }
 
+            // Telemetry (metrics/tracing) is about instrumentation of observable code paths, so it is
+            // evaluated for every project, not just web services.
+            bool hasTelemetryPackage = packages.Any(p =>
+                p.StartsWith("OpenTelemetry", StringComparison.OrdinalIgnoreCase) ||
+                p.Equals("Radiant", StringComparison.OrdinalIgnoreCase) ||
+                p.StartsWith("prometheus-net", StringComparison.OrdinalIgnoreCase) ||
+                p.StartsWith("App.Metrics", StringComparison.OrdinalIgnoreCase) ||
+                p.Equals("System.Diagnostics.DiagnosticSource", StringComparison.OrdinalIgnoreCase));
+
+            bool hasTelemetry = hasTelemetryPackage || project.HasRadiant;
+            if (!hasTelemetry && !isTest)
+            {
+                hasTelemetry = SourceMentionsAny(Path.GetDirectoryName(csprojPath),
+                    "System.Diagnostics.Metrics", "new Meter(", "ActivitySource", "AddOpenTelemetry", "RadiantHost");
+            }
+            project.HasTelemetry = hasTelemetry;
+
             return project;
         }
 
@@ -222,6 +239,11 @@ namespace CodeHub.Core.Services.Collectors
 
         private static bool SourceMentions(string directory, string token)
         {
+            return SourceMentionsAny(directory, token);
+        }
+
+        private static bool SourceMentionsAny(string directory, params string[] tokens)
+        {
             try
             {
                 if (String.IsNullOrEmpty(directory) || !Directory.Exists(directory)) return false;
@@ -230,7 +252,10 @@ namespace CodeHub.Core.Services.Collectors
                 {
                     if (scanned++ > 200) break;
                     string content = File.ReadAllText(file);
-                    if (content.Contains(token, StringComparison.Ordinal)) return true;
+                    foreach (string token in tokens)
+                    {
+                        if (content.Contains(token, StringComparison.Ordinal)) return true;
+                    }
                 }
             }
             catch (Exception)

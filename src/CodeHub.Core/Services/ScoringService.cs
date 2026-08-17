@@ -89,33 +89,27 @@ namespace CodeHub.Core.Services
 
         private static Signal ScoreTelemetry(Repository repository, List<Project> projects)
         {
-            List<Project> webServices = projects.Where(p => p.Type == ProjectTypeEnum.CSharp && p.IsWebService).ToList();
+            // Telemetry is metering/tracing through observable code paths — evaluated for every C#
+            // codebase, not only web services. Test harnesses do not count.
+            List<Project> codeProjects = projects.Where(p => p.Type == ProjectTypeEnum.CSharp && !p.IsTestProject).ToList();
             Signal signal = New(repository, SignalTypeEnum.Telemetry);
 
-            if (webServices.Count == 0)
+            if (codeProjects.Count == 0)
             {
                 signal.Status = HealthStatusEnum.NotApplicable;
-                signal.Detail = "No C# web services.";
+                signal.Detail = "No C# projects to evaluate.";
                 return signal;
             }
 
-            bool anyRadiant = webServices.Any(p => p.HasRadiant);
-            bool anyWatson = webServices.Any(p => p.HasWatson7);
-
-            if (anyRadiant)
+            if (codeProjects.Any(p => p.HasTelemetry))
             {
                 signal.Status = HealthStatusEnum.Green;
-                signal.Detail = "Web service wires Radiant telemetry.";
-            }
-            else if (anyWatson)
-            {
-                signal.Status = HealthStatusEnum.Yellow;
-                signal.Detail = "Watson 7 web service with no Radiant telemetry host.";
+                signal.Detail = "Exposes metrics/traces (telemetry instrumentation detected).";
             }
             else
             {
                 signal.Status = HealthStatusEnum.Red;
-                signal.Detail = "Web service with no detected telemetry.";
+                signal.Detail = "No metrics/traces (telemetry instrumentation) detected.";
             }
 
             return signal;

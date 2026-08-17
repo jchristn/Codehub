@@ -88,6 +88,12 @@ namespace CodeHub.Core.Models
         public bool HasRadiant { get; set; } = false;
 
         /// <summary>
+        /// Whether the project exposes telemetry (metrics/traces) — OpenTelemetry,
+        /// System.Diagnostics.Metrics/Meter, ActivitySource, Radiant, or Prometheus.
+        /// </summary>
+        public bool HasTelemetry { get; set; } = false;
+
+        /// <summary>
         /// Count of outdated dependencies in this project.
         /// </summary>
         public int OutdatedCount { get; set; } = 0;
