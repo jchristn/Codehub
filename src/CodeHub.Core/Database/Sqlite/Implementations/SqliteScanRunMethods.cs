@@ -40,12 +40,13 @@ namespace CodeHub.Core.Database.Sqlite.Implementations
         {
             if (run == null) throw new ArgumentNullException(nameof(run));
             await _Db.ExecuteQueryAsync(
-                "INSERT INTO scan_runs (id, trigger, status, reposscanned, repostotal, error, startedutc, completedutc) VALUES (" +
+                "INSERT INTO scan_runs (id, trigger, status, reposscanned, repostotal, targetrepository, error, startedutc, completedutc) VALUES (" +
                 Sanitizer.Quote(run.Id) + ", " +
                 Sanitizer.Quote(run.Trigger.ToString()) + ", " +
                 Sanitizer.Quote(run.Status.ToString()) + ", " +
                 run.ReposScanned + ", " +
                 run.ReposTotal + ", " +
+                Sanitizer.Quote(run.TargetRepository) + ", " +
                 Sanitizer.Quote(run.Error) + ", " +
                 Sanitizer.Timestamp(run.StartedUtc) + ", " +
                 Sanitizer.Timestamp(run.CompletedUtc) + ");",
@@ -111,6 +112,7 @@ namespace CodeHub.Core.Database.Sqlite.Implementations
                 Status = row.GetEnum("status", ScanStatusEnum.Running),
                 ReposScanned = row.GetInt("reposscanned"),
                 ReposTotal = row.GetInt("repostotal"),
+                TargetRepository = row.GetString("targetrepository"),
                 Error = row.GetString("error"),
                 StartedUtc = row.GetDateTimeRequired("startedutc"),
                 CompletedUtc = row.GetDateTime("completedutc")

@@ -47,6 +47,11 @@ function ScansView({ apiClient, scanStatus, scanNonce, isScanning, onScanNow }) 
   const columns = [
     { key: 'trigger', label: t('scans.colTrigger'), render: (r) => r.trigger },
     {
+      key: 'repository',
+      label: t('scans.colRepository'),
+      render: (r) => (r.targetRepository ? r.targetRepository : <span className="muted">{t('scans.allRepos')}</span>)
+    },
+    {
       key: 'status',
       label: t('scans.colStatus'),
       render: (r) => <span className={`run-status run-${(r.status || 'unknown').toLowerCase()}`}>{r.status}</span>

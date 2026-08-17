@@ -118,6 +118,14 @@ namespace CodeHub.Core.Services
             {
                 _IsScanning = true;
                 _CurrentRun = run;
+
+                // Record which repository a single-repo (manual) scan targeted.
+                if (!String.IsNullOrEmpty(repositoryId))
+                {
+                    Repository target = await _Db.Repositories.ReadAsync(repositoryId, token).ConfigureAwait(false);
+                    run.TargetRepository = target?.Name;
+                }
+
                 await _Db.ScanRuns.CreateAsync(run, token).ConfigureAwait(false);
 
                 SelectionSets sets = await _Selection.GetSetsAsync(token).ConfigureAwait(false);

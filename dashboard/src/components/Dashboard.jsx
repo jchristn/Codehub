@@ -66,8 +66,23 @@ function Dashboard() {
   const handleScanNow = useCallback(async () => {
     try {
       await apiClient.startScan(null);
-      toast.info(t('common.scanning'));
       refreshScan();
+      // Briefly wait for the scan to report its in-flight repositories, then name the toast.
+      let repos = [];
+      for (let i = 0; i < 8; i += 1) {
+        const st = await apiClient.getScanStatus();
+        if (st && Array.isArray(st.repositories) && st.repositories.length) {
+          repos = st.repositories;
+          break;
+        }
+        if (st && !st.isScanning && i > 1) break;
+        await new Promise((resolve) => {
+          setTimeout(resolve, 250);
+        });
+      }
+      if (repos.length === 1) toast.info(t('scans.scanningOne', { name: repos[0].name }));
+      else if (repos.length > 1) toast.info(t('scans.scanningMany', { count: repos.length }));
+      else toast.info(t('common.scanning'));
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         toast.warning(t('common.scanning'));

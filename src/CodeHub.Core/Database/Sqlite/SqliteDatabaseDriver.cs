@@ -95,7 +95,8 @@ namespace CodeHub.Core.Database.Sqlite
                 "ALTER TABLE repositories ADD COLUMN commitsbehind INTEGER NOT NULL DEFAULT 0;",
                 "ALTER TABLE repositories ADD COLUMN commithash TEXT;",
                 "ALTER TABLE github_snapshots ADD COLUMN isarchived INTEGER NOT NULL DEFAULT 0;",
-                "ALTER TABLE repositories ADD COLUMN branchcount INTEGER NOT NULL DEFAULT 0;"
+                "ALTER TABLE repositories ADD COLUMN branchcount INTEGER NOT NULL DEFAULT 0;",
+                "ALTER TABLE scan_runs ADD COLUMN targetrepository TEXT;"
             };
 
             foreach (string migration in migrations)

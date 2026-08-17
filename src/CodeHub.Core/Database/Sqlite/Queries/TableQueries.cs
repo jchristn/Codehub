@@ -147,6 +147,7 @@ CREATE TABLE IF NOT EXISTS scan_runs (
     status TEXT NOT NULL DEFAULT 'Running',
     reposscanned INTEGER NOT NULL DEFAULT 0,
     repostotal INTEGER NOT NULL DEFAULT 0,
+    targetrepository TEXT,
     error TEXT,
     startedutc TEXT NOT NULL,
     completedutc TEXT

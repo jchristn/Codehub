@@ -48,6 +48,11 @@ namespace CodeHub.Core.Models
         public int ReposTotal { get; set; } = 0;
 
         /// <summary>
+        /// The single repository this manual scan targeted, or null for a full scan.
+        /// </summary>
+        public string TargetRepository { get; set; } = null;
+
+        /// <summary>
         /// Error message when the scan failed.
         /// </summary>
         public string Error { get; set; } = null;
