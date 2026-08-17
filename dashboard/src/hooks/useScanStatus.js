@@ -9,6 +9,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 export function useScanStatus(apiClient, { activeInterval = 2500, onComplete } = {}) {
   const [status, setStatus] = useState(null);
   const wasScanning = useRef(false);
+  const lastReposRef = useRef([]);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
@@ -17,8 +18,13 @@ export function useScanStatus(apiClient, { activeInterval = 2500, onComplete } =
     try {
       const next = await apiClient.getScanStatus();
       setStatus(next);
+      // Remember the in-flight repositories while scanning; the final status clears them.
+      if (next && next.isScanning && Array.isArray(next.repositories) && next.repositories.length) {
+        lastReposRef.current = next.repositories;
+      }
       if (wasScanning.current && next && !next.isScanning) {
-        if (onCompleteRef.current) onCompleteRef.current(next);
+        if (onCompleteRef.current) onCompleteRef.current(next, lastReposRef.current);
+        lastReposRef.current = [];
       }
       wasScanning.current = Boolean(next && next.isScanning);
       return next;

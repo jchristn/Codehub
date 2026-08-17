@@ -285,8 +285,14 @@ function RepositoriesView({ apiClient, scanNonce, isScanning, onScanNow, lastSca
           apiClient
             .getScanStatus()
             .then((st) => {
-              if (!st?.isScanning || Date.now() > deadline) loadRef.current(true);
-              else setTimeout(poll, 1500);
+              if (!st?.isScanning) {
+                toast.success(t('scans.scannedOne', { name: repo.name }));
+                loadRef.current(true);
+              } else if (Date.now() > deadline) {
+                loadRef.current(true);
+              } else {
+                setTimeout(poll, 1500);
+              }
             })
             .catch(() => loadRef.current(true));
         };

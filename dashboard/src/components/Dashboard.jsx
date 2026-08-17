@@ -32,11 +32,18 @@ function Dashboard() {
   const [settings, setSettings] = useState(null);
   const [scanNonce, setScanNonce] = useState(0);
 
-  // Refresh overview + bump nonce when a scan finishes.
-  const handleScanComplete = useCallback(() => {
-    toast.success(t('common.scanning') + ' ✓');
-    setScanNonce((n) => n + 1);
-  }, [toast, t]);
+  // Refresh overview + bump nonce when a scan finishes, naming the repository/count scanned.
+  const handleScanComplete = useCallback(
+    (_status, repos) => {
+      let message;
+      if (repos && repos.length === 1) message = t('scans.scannedOne', { name: repos[0].name });
+      else if (repos && repos.length > 1) message = t('scans.scannedMany', { count: repos.length });
+      else message = t('scans.completeGeneric');
+      toast.success(message);
+      setScanNonce((n) => n + 1);
+    },
+    [toast, t]
+  );
 
   const { status: scanStatus, refresh: refreshScan, isScanning } = useScanStatus(apiClient, {
     onComplete: handleScanComplete
