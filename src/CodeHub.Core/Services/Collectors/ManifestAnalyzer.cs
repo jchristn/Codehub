@@ -79,12 +79,17 @@ namespace CodeHub.Core.Services.Collectors
             bool nameLooksTest = project.Name.StartsWith("Test", StringComparison.OrdinalIgnoreCase) ||
                                  project.Name.Contains(".Test", StringComparison.OrdinalIgnoreCase);
 
+            bool isTest = hasTestSdk || hasTouchstone || nameLooksTest;
+
             project.HasTouchstone = hasTouchstone;
             project.HasWatson7 = hasWatson;
             project.HasRadiant = hasRadiant;
-            project.IsTestProject = hasTestSdk || hasTouchstone || nameLooksTest;
-            project.IsWebService = hasWatson || hasAspNet ||
-                                   project.Name.EndsWith(".Server", StringComparison.OrdinalIgnoreCase);
+            project.IsTestProject = isTest;
+            // A test harness (e.g. a TCP library's Test.Server console app) is never a web service,
+            // so it never counts toward the telemetry signal.
+            project.IsWebService = !isTest &&
+                                   (hasWatson || hasAspNet ||
+                                    project.Name.EndsWith(".Server", StringComparison.OrdinalIgnoreCase));
 
             // Strengthen Radiant detection with a bounded source scan when the package is not referenced.
             if (!project.HasRadiant && project.IsWebService)
