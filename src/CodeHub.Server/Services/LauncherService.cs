@@ -105,13 +105,12 @@ namespace CodeHub.Server.Services
             if (!Directory.Exists(path))
                 throw new DirectoryNotFoundException("Repository path no longer exists: " + path);
 
-            string command = BuildAgentCommand(agent, dangerous, prompt);
-
             System.Collections.Generic.HashSet<IntPtr> windowsBefore = Interop.WindowForeground.Snapshot();
 
-            // The prompt goes into a temp batch file (not the wt/cmd command line), so its
-            // spaces and special characters do not need shell-level escaping.
-            string batch = WriteLaunchBatch(path, command);
+            // The prompt is written verbatim to a sidecar file (newlines preserved) and read back
+            // by a PowerShell launcher that passes it to the agent as a single argument. Putting the
+            // prompt on a cmd command line would force it onto one physical line, losing newlines.
+            string batch = WriteLaunchFiles(agent, dangerous, path, prompt);
             OpenTerminal(path, "\"" + batch + "\"");
 
             Interop.WindowForeground.BringNewWindowToForegroundAsync(windowsBefore, 3000);
@@ -122,11 +121,9 @@ namespace CodeHub.Server.Services
 
         #region Private-Methods
 
-        private static string BuildAgentCommand(string agent, bool dangerous, string prompt)
+        private static void ResolveAgent(string agent, out string binary, out string dangerFlag, out string promptFlag)
         {
-            string binary;
-            string dangerFlag;
-            string promptFlag = null; // flag preceding the prompt; null means pass it positionally
+            promptFlag = null; // flag preceding the prompt; null means pass it positionally
             switch (agent.Trim().ToLowerInvariant())
             {
                 case "claude": binary = "claude"; dangerFlag = "--dangerously-skip-permissions"; break;
@@ -136,34 +133,53 @@ namespace CodeHub.Server.Services
                 case "opencode": binary = "opencode"; dangerFlag = null; break;
                 default: throw new ArgumentException("Unknown agent: " + agent);
             }
-
-            string command = binary;
-            if (dangerous && dangerFlag != null) command += " " + dangerFlag;
-            if (!String.IsNullOrWhiteSpace(prompt))
-            {
-                string quoted = "\"" + EscapePromptForBatch(prompt) + "\"";
-                command += promptFlag != null ? " " + promptFlag + " " + quoted : " " + quoted;
-            }
-            return command;
         }
 
-        private static string EscapePromptForBatch(string prompt)
+        // Escape a string for embedding inside a PowerShell single-quoted literal.
+        private static string PsLiteral(string value)
         {
-            // Flatten to a single line and escape for a double-quoted batch argument.
-            string flat = prompt.Replace("\r\n", " ").Replace("\r", " ").Replace("\n", " ").Trim();
-            flat = flat.Replace("%", "%%");    // percent is special in batch files
-            flat = flat.Replace("\"", "\\\""); // pass embedded double quotes through to the agent
-            return flat;
+            return value.Replace("'", "''");
         }
 
-        private static string WriteLaunchBatch(string path, string command)
+        // Write the three temp files that drive a custom action and return the .cmd entry point:
+        //   .txt  the prompt, byte-for-byte with newlines intact
+        //   .ps1  reads the prompt raw and launches the agent with it as one argument
+        //   .cmd  cd's to the repo and invokes the .ps1 (keeps the existing wt/cmd /k window flow)
+        private static string WriteLaunchFiles(string agent, bool dangerous, string path, string prompt)
         {
+            ResolveAgent(agent, out string binary, out string dangerFlag, out string promptFlag);
+
             string dir = Path.Combine(Path.GetTempPath(), "codehub");
             Directory.CreateDirectory(dir);
-            string file = Path.Combine(dir, "action_" + Guid.NewGuid().ToString("N") + ".cmd");
-            string content = "@echo off\r\ncd /d \"" + path + "\"\r\n" + command + "\r\n";
-            File.WriteAllText(file, content);
-            return file;
+            string stem = Path.Combine(dir, "action_" + Guid.NewGuid().ToString("N"));
+            string promptFile = stem + ".txt";
+            string scriptFile = stem + ".ps1";
+            string cmdFile = stem + ".cmd";
+
+            bool hasPrompt = !String.IsNullOrWhiteSpace(prompt);
+            if (hasPrompt) File.WriteAllText(promptFile, prompt.Trim(), new System.Text.UTF8Encoding(false));
+
+            // Build the PowerShell launcher. The agent is invoked via the call operator so a PATH
+            // shim (e.g. claude.cmd) resolves, and the prompt keeps its newlines as a single argument.
+            System.Text.StringBuilder script = new System.Text.StringBuilder();
+            string invoke = "& '" + binary + "'";
+            if (dangerous && dangerFlag != null) invoke += " " + dangerFlag;
+            if (hasPrompt)
+            {
+                // Read the prompt verbatim, then escape embedded double quotes as \" so Windows
+                // PowerShell 5.1's native-argument handling delivers them intact to the agent.
+                script.Append("$p = (Get-Content -Raw -LiteralPath '")
+                      .Append(PsLiteral(promptFile))
+                      .Append("') -replace '\"','\\\"'\r\n");
+                invoke += (promptFlag != null ? " " + promptFlag : String.Empty) + " $p";
+            }
+            script.Append(invoke).Append("\r\n");
+            File.WriteAllText(scriptFile, script.ToString(), new System.Text.UTF8Encoding(false));
+
+            string cmd = "@echo off\r\ncd /d \"" + path + "\"\r\n"
+                + "powershell -NoProfile -ExecutionPolicy Bypass -File \"" + scriptFile + "\"\r\n";
+            File.WriteAllText(cmdFile, cmd);
+            return cmdFile;
         }
 
         private static void StartExplorer(string path)
