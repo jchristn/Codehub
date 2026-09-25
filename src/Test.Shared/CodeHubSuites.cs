@@ -6,6 +6,7 @@ namespace Test.Shared
     using System.Threading.Tasks;
     using CodeHub.Core.Database;
     using CodeHub.Core.Database.Sqlite;
+    using CodeHub.Core.Database.Sqlite.Queries;
     using CodeHub.Core.Enums;
     using CodeHub.Core.Models;
     using CodeHub.Core.Serialization;
@@ -371,6 +372,63 @@ namespace Test.Shared
 
                                     await db.Selections.DeleteByPathAsync("C:\\CODE\\PNEUMA").ConfigureAwait(false);
                                     AssertTrue(await db.Selections.CountAsync().ConfigureAwait(false) == 1, "delete matches case-insensitively");
+                                }
+                            }
+                            finally
+                            {
+                                SqliteConnection.ClearAllPools();
+                                Directory.Delete(dir, true);
+                            }
+                        }),
+
+                    new TestCaseDescriptor("Selection", "RepositoryNoCaseMigration", "Migration merges case-variant repositories and annotations",
+                        executeAsync: async _ =>
+                        {
+                            string dir = Path.Combine(Path.GetTempPath(), "codehub-db-" + Guid.NewGuid().ToString("N"));
+                            Directory.CreateDirectory(dir);
+                            string file = Path.Combine(dir, "codehub.db");
+                            try
+                            {
+                                // Pre-migration schema (case-sensitive keys) holding case-variant duplicates.
+                                using (SqliteDatabaseDriver legacy = new SqliteDatabaseDriver(new DatabaseSettings { Filename = file }))
+                                {
+                                    List<string> setup = new List<string>();
+                                    foreach (string create in TableQueries.All) setup.Add(create.Replace(" COLLATE NOCASE", ""));
+                                    setup.Add("INSERT INTO repositories (id, path, name, createdutc) VALUES ('old', 'c:\\code\\armor', 'armor', '2026-01-01T00:00:00Z');");
+                                    setup.Add("INSERT INTO repositories (id, path, name, createdutc) VALUES ('new', 'C:\\Code\\Armor', 'Armor', '2026-02-01T00:00:00Z');");
+                                    setup.Add("INSERT INTO repositories (id, path, name, createdutc) VALUES ('solo', 'C:\\Code\\Solo', 'Solo', '2026-01-01T00:00:00Z');");
+                                    setup.Add("INSERT INTO projects (id, repoid, path, name, createdutc) VALUES ('p-old', 'old', 'c:\\code\\armor\\a.csproj', 'A', '2026-01-01T00:00:00Z');");
+                                    setup.Add("INSERT INTO projects (id, repoid, path, name, createdutc) VALUES ('p-new', 'new', 'C:\\Code\\Armor\\a.csproj', 'A', '2026-01-01T00:00:00Z');");
+                                    setup.Add("INSERT INTO annotations (id, repoid, signalcolumn, status, createdutc) VALUES ('a1', 'old', 'Telemetry', 'Green', '2026-01-01T00:00:00Z');");
+                                    setup.Add("INSERT INTO annotations (id, repoid, signalcolumn, status, createdutc) VALUES ('a2', 'new', 'Overall', 'Yellow', '2026-02-01T00:00:00Z');");
+                                    setup.Add("INSERT INTO annotations (id, repoid, signalcolumn, status, createdutc) VALUES ('a3', 'solo', 'telemetry', 'Red', '2026-01-01T00:00:00Z');");
+                                    setup.Add("INSERT INTO annotations (id, repoid, signalcolumn, status, createdutc) VALUES ('a4', 'solo', 'Telemetry', 'Green', '2026-02-01T00:00:00Z');");
+                                    await legacy.ExecuteQueriesAsync(setup).ConfigureAwait(false);
+                                }
+
+                                using (DatabaseDriverBase db = await DatabaseDriverFactory.CreateAndInitializeAsync(new DatabaseSettings { Filename = file }).ConfigureAwait(false))
+                                {
+                                    List<Repository> repos = await db.Repositories.EnumerateAsync().ConfigureAwait(false);
+                                    AssertTrue(repos.Count == 2, "duplicate repository removed (got " + repos.Count + ")");
+                                    Repository armor = repos.Find(r => r.Id == "old");
+                                    AssertTrue(armor != null && armor.Path == "C:\\Code\\Armor" && armor.Name == "Armor", "oldest row kept with newest casing");
+
+                                    List<Project> projects = await db.Projects.EnumerateAllAsync().ConfigureAwait(false);
+                                    AssertTrue(projects.Count == 1 && projects[0].Id == "p-old", "dropped repository's children removed");
+
+                                    List<Annotation> armorAnn = await db.Annotations.EnumerateByRepositoryAsync("old").ConfigureAwait(false);
+                                    AssertTrue(armorAnn.Count == 2, "overrides from both variants kept on the surviving repository");
+
+                                    List<Annotation> soloAnn = await db.Annotations.EnumerateByRepositoryAsync("solo").ConfigureAwait(false);
+                                    AssertTrue(soloAnn.Count == 1 && soloAnn[0].Status == "Green", "newest case-variant override kept");
+
+                                    Repository byPath = await db.Repositories.ReadByPathAsync("c:\\CODE\\armor").ConfigureAwait(false);
+                                    AssertTrue(byPath != null && byPath.Id == "old", "read by path ignores case");
+
+                                    byPath.Path = "C:\\code\\ARMOR";
+                                    await db.Repositories.UpsertAsync(byPath).ConfigureAwait(false);
+                                    repos = await db.Repositories.EnumerateAsync().ConfigureAwait(false);
+                                    AssertTrue(repos.Count == 2 && repos.Exists(r => r.Id == "old" && r.Path == "C:\\code\\ARMOR"), "case-variant upsert updates in place");
                                 }
                             }
                             finally

@@ -61,7 +61,7 @@ namespace CodeHub.Core.Database.Sqlite.Implementations
 
             DataTable existingTable = await _Db.ExecuteQueryAsync(
                 "SELECT id FROM annotations WHERE repoid=" + Sanitizer.Quote(annotation.RepositoryId) +
-                " AND signalcolumn=" + Sanitizer.Quote(annotation.Column) + ";", false, token).ConfigureAwait(false);
+                " AND signalcolumn=" + Sanitizer.Quote(annotation.Column) + " COLLATE NOCASE;", false, token).ConfigureAwait(false);
 
             string sql;
             if (existingTable.Rows.Count > 0)
@@ -69,9 +69,10 @@ namespace CodeHub.Core.Database.Sqlite.Implementations
                 sql =
                     "UPDATE annotations SET " +
                     "status=" + Sanitizer.Quote(annotation.Status) + ", " +
-                    "note=" + Sanitizer.Quote(annotation.Note) + " " +
+                    "note=" + Sanitizer.Quote(annotation.Note) + ", " +
+                    "signalcolumn=" + Sanitizer.Quote(annotation.Column) + " " +
                     "WHERE repoid=" + Sanitizer.Quote(annotation.RepositoryId) +
-                    " AND signalcolumn=" + Sanitizer.Quote(annotation.Column) + ";";
+                    " AND signalcolumn=" + Sanitizer.Quote(annotation.Column) + " COLLATE NOCASE;";
             }
             else
             {
@@ -96,7 +97,7 @@ namespace CodeHub.Core.Database.Sqlite.Implementations
             if (String.IsNullOrEmpty(column)) throw new ArgumentNullException(nameof(column));
             await _Db.ExecuteQueryAsync(
                 "DELETE FROM annotations WHERE repoid=" + Sanitizer.Quote(repositoryId) +
-                " AND signalcolumn=" + Sanitizer.Quote(column) + ";", false, token).ConfigureAwait(false);
+                " AND signalcolumn=" + Sanitizer.Quote(column) + " COLLATE NOCASE;", false, token).ConfigureAwait(false);
         }
 
         #endregion

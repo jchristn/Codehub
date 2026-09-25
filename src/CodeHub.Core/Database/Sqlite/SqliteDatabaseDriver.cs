@@ -4,6 +4,7 @@ namespace CodeHub.Core.Database.Sqlite
     using System.Collections.Generic;
     using System.Data;
     using System.IO;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
     using CodeHub.Core.Database.Sqlite.Implementations;
@@ -111,35 +112,106 @@ namespace CodeHub.Core.Database.Sqlite
                 }
             }
 
-            await MigrateScanSelectionsNoCaseAsync(token).ConfigureAwait(false);
+            // Case-insensitive uniqueness for text keys. Older databases could hold case-variant
+            // duplicates (e.g. C:\Code\X and c:\code\X); each rebuild collapses them.
+            await RebuildWithNoCaseAsync("scan_selections", "path", TableQueries.ScanSelections,
+                new List<string>(), "createdutc ASC, rowid ASC", token).ConfigureAwait(false);
+
+            await RebuildWithNoCaseAsync("repositories", "path", TableQueries.Repositories,
+                RepositoryDedupeQueries(), "createdutc ASC, rowid ASC", token).ConfigureAwait(false);
+
+            // For overrides, the most recently created variant is the user's latest intent.
+            await RebuildWithNoCaseAsync("annotations", "signalcolumn", TableQueries.Annotations,
+                new List<string>(), "createdutc DESC, rowid DESC", token).ConfigureAwait(false);
         }
 
         /// <summary>
-        /// Rebuild scan_selections so its path uniqueness is case-insensitive (COLLATE NOCASE).
-        /// Older databases could hold case-variant duplicates (e.g. C:\Code\X and c:\code\X);
-        /// the earliest-created row of each is kept. Runs once: skipped when already migrated.
+        /// Rebuild a table so the given text column compares case-insensitively (COLLATE NOCASE),
+        /// making its UNIQUE constraint and lookups case-insensitive. Runs once per table: skipped
+        /// when the column is already NOCASE. Rows are copied in the given order and INSERT OR
+        /// IGNORE keeps the first of any case-variant duplicates.
         /// </summary>
-        private async Task MigrateScanSelectionsNoCaseAsync(CancellationToken token)
+        /// <param name="table">Table name.</param>
+        /// <param name="column">Text column to make case-insensitive.</param>
+        /// <param name="createSql">Current CREATE TABLE/INDEX statements for the table.</param>
+        /// <param name="dedupeQueries">Statements run first to resolve duplicates (e.g. child rows).</param>
+        /// <param name="orderBy">Copy order; the first row of each duplicate group wins.</param>
+        /// <param name="token">Cancellation token.</param>
+        private async Task RebuildWithNoCaseAsync(
+            string table,
+            string column,
+            string createSql,
+            List<string> dedupeQueries,
+            string orderBy,
+            CancellationToken token)
         {
             DataTable schema = await ExecuteQueryAsync(
-                "SELECT sql FROM sqlite_master WHERE type='table' AND name='scan_selections';", false, token).ConfigureAwait(false);
+                "SELECT sql FROM sqlite_master WHERE type='table' AND name=" + Sanitizer.Quote(table) + ";", false, token).ConfigureAwait(false);
             if (schema.Rows.Count == 0) return;
 
-            string sql = schema.Rows[0]["sql"] as string;
-            if (sql != null && sql.IndexOf("COLLATE NOCASE", StringComparison.OrdinalIgnoreCase) >= 0) return;
+            string sql = schema.Rows[0]["sql"] as string ?? String.Empty;
+            if (Regex.IsMatch(sql, @"(?im)^\s*" + column + @"\s+[^,\r\n]*COLLATE\s+NOCASE")) return;
 
-            List<string> queries = new List<string>
+            List<string> columns = new List<string>();
+            DataTable info = await ExecuteQueryAsync(
+                "SELECT name FROM pragma_table_info(" + Sanitizer.Quote(table) + ");", false, token).ConfigureAwait(false);
+            foreach (DataRow row in info.Rows) columns.Add(row["name"].ToString());
+            string columnList = String.Join(", ", columns);
+
+            // Indexes follow a renamed table; drop them so the CREATE statements recreate them.
+            DataTable indexes = await ExecuteQueryAsync(
+                "SELECT name FROM sqlite_master WHERE type='index' AND sql IS NOT NULL AND tbl_name=" + Sanitizer.Quote(table) + ";", false, token).ConfigureAwait(false);
+
+            string staging = table + "_migrate";
+            List<string> queries = new List<string>(dedupeQueries)
             {
-                "DROP TABLE IF EXISTS scan_selections_migrate;",
-                "ALTER TABLE scan_selections RENAME TO scan_selections_migrate;",
-                "DROP INDEX IF EXISTS idx_scan_selections_included;",
-                TableQueries.ScanSelections,
-                "INSERT OR IGNORE INTO scan_selections (id, path, included, createdutc) " +
-                    "SELECT id, path, included, createdutc FROM scan_selections_migrate ORDER BY createdutc ASC, rowid ASC;",
-                "DROP TABLE scan_selections_migrate;"
+                "DROP TABLE IF EXISTS " + staging + ";",
+                "ALTER TABLE " + table + " RENAME TO " + staging + ";"
             };
+            foreach (DataRow row in indexes.Rows) queries.Add("DROP INDEX IF EXISTS " + row["name"] + ";");
+            queries.Add(createSql);
+            queries.Add("INSERT OR IGNORE INTO " + table + " (" + columnList + ") SELECT " + columnList + " FROM " + staging + " ORDER BY " + orderBy + ";");
+            queries.Add("DROP TABLE " + staging + ";");
 
             await ExecuteQueriesAsync(queries, token).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Collapse case-variant duplicate repositories before the NOCASE rebuild. The oldest row
+        /// is kept (it carries the user's overrides and history) and takes the newest row's path
+        /// and name (the current on-disk casing); the newer rows and their child rows are removed,
+        /// moving over any override the kept row does not already have.
+        /// </summary>
+        private static List<string> RepositoryDedupeQueries()
+        {
+            List<string> queries = new List<string>
+            {
+                "DROP TABLE IF EXISTS temp.repo_dupe_keep;",
+                "DROP TABLE IF EXISTS temp.repo_dupe_drop;",
+                "CREATE TEMP TABLE repo_dupe_keep AS " +
+                    "SELECT lower(r.path) AS lp, " +
+                    "(SELECT k.id FROM repositories k WHERE lower(k.path)=lower(r.path) ORDER BY k.createdutc ASC, k.rowid ASC LIMIT 1) AS keepid, " +
+                    "(SELECT n.path FROM repositories n WHERE lower(n.path)=lower(r.path) ORDER BY n.createdutc DESC, n.rowid DESC LIMIT 1) AS newpath, " +
+                    "(SELECT n.name FROM repositories n WHERE lower(n.path)=lower(r.path) ORDER BY n.createdutc DESC, n.rowid DESC LIMIT 1) AS newname " +
+                    "FROM repositories r GROUP BY lower(r.path) HAVING COUNT(*) > 1;",
+                "CREATE TEMP TABLE repo_dupe_drop AS " +
+                    "SELECT r.id AS dropid, k.keepid AS keepid FROM repositories r JOIN repo_dupe_keep k ON lower(r.path)=k.lp WHERE r.id<>k.keepid;",
+                "UPDATE OR IGNORE annotations SET repoid=(SELECT d.keepid FROM repo_dupe_drop d WHERE d.dropid=annotations.repoid) " +
+                    "WHERE repoid IN (SELECT dropid FROM repo_dupe_drop);"
+            };
+
+            foreach (string child in new[] { "annotations", "repository_languages", "projects", "dependencies", "signals", "branches", "github_snapshots" })
+                queries.Add("DELETE FROM " + child + " WHERE repoid IN (SELECT dropid FROM repo_dupe_drop);");
+
+            queries.Add("DELETE FROM repositories WHERE id IN (SELECT dropid FROM repo_dupe_drop);");
+            queries.Add(
+                "UPDATE repositories SET " +
+                "path=(SELECT k.newpath FROM repo_dupe_keep k WHERE k.keepid=repositories.id), " +
+                "name=(SELECT k.newname FROM repo_dupe_keep k WHERE k.keepid=repositories.id) " +
+                "WHERE id IN (SELECT keepid FROM repo_dupe_keep);");
+            queries.Add("DROP TABLE temp.repo_dupe_keep;");
+            queries.Add("DROP TABLE temp.repo_dupe_drop;");
+            return queries;
         }
 
         /// <inheritdoc />
@@ -147,7 +219,10 @@ namespace CodeHub.Core.Database.Sqlite
         {
             if (String.IsNullOrEmpty(query)) throw new ArgumentNullException(nameof(query));
 
-            DataTable result = new DataTable();
+            // Match SQLite's own (BINARY) uniqueness semantics. DataTable enforces the schema's keys
+            // case-insensitively by default, so data SQLite accepts (e.g. "C:\X" and "c:\x" in a
+            // case-sensitive UNIQUE column) would otherwise make every read of the table throw.
+            DataTable result = new DataTable { CaseSensitive = true };
 
             await _Gate.WaitAsync(token).ConfigureAwait(false);
             try

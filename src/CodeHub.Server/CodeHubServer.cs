@@ -94,6 +94,10 @@ namespace CodeHub.Server
             Server.Routes.Preflight = PreflightAsync;
             Server.Routes.PostRouting = PostRoutingAsync;
 
+            // Unhandled route exceptions get Watson's generic 500 page; log the real cause.
+            Server.Events.ExceptionEncountered += (sender, e) =>
+                _Logging.Warn(_Header + "unhandled exception on " + e.Method + " " + e.Url + ": " + e.Exception);
+
             if (_Ctx.Settings.Webserver.EnableOpenApi)
             {
                 try

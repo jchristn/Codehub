@@ -52,7 +52,9 @@ namespace CodeHub.Core.Database.Sqlite.Implementations
             if (existing != null)
             {
                 batch.Add(
+                    // Paths match case-insensitively; also rewrite the stored path so it takes the new casing.
                     "UPDATE repositories SET " +
+                    "path=" + Sanitizer.Quote(repository.Path) + ", " +
                     "name=" + Sanitizer.Quote(repository.Name) + ", " +
                     "visibility=" + Sanitizer.Quote(repository.Visibility.ToString()) + ", " +
                     "primarylanguage=" + Sanitizer.Quote(repository.PrimaryLanguage.ToString()) + ", " +
@@ -131,7 +133,7 @@ namespace CodeHub.Core.Database.Sqlite.Implementations
         {
             if (String.IsNullOrEmpty(path)) throw new ArgumentNullException(nameof(path));
             DataTable table = await _Db.ExecuteQueryAsync(
-                "SELECT * FROM repositories WHERE path=" + Sanitizer.Quote(path) + ";", false, token).ConfigureAwait(false);
+                "SELECT * FROM repositories WHERE path=" + Sanitizer.Quote(path) + " COLLATE NOCASE;", false, token).ConfigureAwait(false);
             if (table.Rows.Count == 0) return null;
             Repository repo = FromRow(table.Rows[0]);
             await LoadLanguagesAsync(repo, token).ConfigureAwait(false);

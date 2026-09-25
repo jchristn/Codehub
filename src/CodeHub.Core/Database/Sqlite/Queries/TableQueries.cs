@@ -40,7 +40,7 @@ namespace CodeHub.Core.Database.Sqlite.Queries
         public static readonly string Repositories = @"
 CREATE TABLE IF NOT EXISTS repositories (
     id TEXT PRIMARY KEY,
-    path TEXT NOT NULL UNIQUE,
+    path TEXT NOT NULL UNIQUE COLLATE NOCASE,
     name TEXT NOT NULL,
     visibility TEXT NOT NULL DEFAULT 'Unknown',
     primarylanguage TEXT NOT NULL DEFAULT 'Unknown',
@@ -227,7 +227,7 @@ CREATE INDEX IF NOT EXISTS idx_branches_repoid ON branches(repoid);
 CREATE TABLE IF NOT EXISTS annotations (
     id TEXT PRIMARY KEY,
     repoid TEXT NOT NULL,
-    signalcolumn TEXT NOT NULL,
+    signalcolumn TEXT NOT NULL COLLATE NOCASE,
     status TEXT NOT NULL,
     note TEXT,
     createdutc TEXT NOT NULL,

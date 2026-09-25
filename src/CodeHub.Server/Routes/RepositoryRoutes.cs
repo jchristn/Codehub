@@ -296,7 +296,8 @@ namespace CodeHub.Server.Routes
 
             string body = ctx.Request.DataAsString;
             AnnotationRequest request = String.IsNullOrEmpty(body) ? null : _Ctx.Serializer.DeserializeJson<AnnotationRequest>(body);
-            if (request == null || String.IsNullOrWhiteSpace(request.Column) || !_OverridableColumns.Contains(request.Column))
+            string column = null;
+            if (request == null || String.IsNullOrWhiteSpace(request.Column) || !_OverridableColumns.TryGetValue(request.Column.Trim(), out column))
             {
                 await RouteHelper.SendJson(ctx, _Ctx.Serializer, 400, new ErrorResponse("BadRequest", "A valid column is required.")).ConfigureAwait(false);
                 return;
@@ -310,7 +311,7 @@ namespace CodeHub.Server.Routes
             Annotation annotation = new Annotation
             {
                 RepositoryId = id,
-                Column = request.Column.Trim(),
+                Column = column, // canonical casing (e.g. "telemetry" is stored as "Telemetry")
                 Status = request.Status.Trim(),
                 Note = request.Note ?? String.Empty
             };
