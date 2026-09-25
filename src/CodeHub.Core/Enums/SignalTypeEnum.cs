@@ -14,7 +14,7 @@ namespace CodeHub.Core.Enums
         TestInfra,
 
         /// <summary>
-        /// Telemetry/metrics exposure (Radiant + Watson 7 for web services).
+        /// Telemetry: metrics/traces exposure for any non-test C# project.
         /// </summary>
         Telemetry,
 

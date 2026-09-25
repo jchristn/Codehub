@@ -84,20 +84,20 @@ namespace Test.Shared
                             return Task.CompletedTask;
                         }),
 
-                    new TestCaseDescriptor("Scoring", "TelemetryGreen", "Web service with Radiant scores Telemetry green",
+                    new TestCaseDescriptor("Scoring", "TelemetryGreen", "C# project with metrics/traces scores Telemetry green",
                         executeAsync: _ =>
                         {
                             Repository repo = new Repository { Name = "Api" };
                             List<Project> projects = new List<Project>
                             {
-                                new Project { Name = "Api.Server", Type = ProjectTypeEnum.CSharp, IsWebService = true, HasWatson7 = true, HasRadiant = true }
+                                new Project { Name = "Api.Server", Type = ProjectTypeEnum.CSharp, IsWebService = true, HasWatson7 = true, HasRadiant = true, HasTelemetry = true }
                             };
                             List<Signal> signals = scoring.Score(repo, projects, new List<Dependency>(), null, false);
                             AssertStatus(signals, SignalTypeEnum.Telemetry, HealthStatusEnum.Green);
                             return Task.CompletedTask;
                         }),
 
-                    new TestCaseDescriptor("Scoring", "TelemetryYellow", "Watson web service without Radiant scores Telemetry yellow",
+                    new TestCaseDescriptor("Scoring", "TelemetryRedWatson", "Watson web service without metrics/traces scores Telemetry red",
                         executeAsync: _ =>
                         {
                             Repository repo = new Repository { Name = "Api" };
@@ -106,17 +106,31 @@ namespace Test.Shared
                                 new Project { Name = "Api.Server", Type = ProjectTypeEnum.CSharp, IsWebService = true, HasWatson7 = true, HasRadiant = false }
                             };
                             List<Signal> signals = scoring.Score(repo, projects, new List<Dependency>(), null, false);
-                            AssertStatus(signals, SignalTypeEnum.Telemetry, HealthStatusEnum.Yellow);
+                            AssertStatus(signals, SignalTypeEnum.Telemetry, HealthStatusEnum.Red);
                             return Task.CompletedTask;
                         }),
 
-                    new TestCaseDescriptor("Scoring", "TelemetryNaForLibrary", "Non-web C# library scores Telemetry N/A",
+                    new TestCaseDescriptor("Scoring", "TelemetryRedLibrary", "Non-Watson C# library without metrics/traces scores Telemetry red",
                         executeAsync: _ =>
                         {
                             Repository repo = new Repository { Name = "Lib" };
                             List<Project> projects = new List<Project>
                             {
                                 new Project { Name = "Lib", Type = ProjectTypeEnum.CSharp }
+                            };
+                            List<Signal> signals = scoring.Score(repo, projects, new List<Dependency>(), null, false);
+                            AssertStatus(signals, SignalTypeEnum.Telemetry, HealthStatusEnum.Red);
+                            return Task.CompletedTask;
+                        }),
+
+                    new TestCaseDescriptor("Scoring", "TelemetryNaWithoutCSharp", "Repo with only test or non-C# projects scores Telemetry N/A",
+                        executeAsync: _ =>
+                        {
+                            Repository repo = new Repository { Name = "Web" };
+                            List<Project> projects = new List<Project>
+                            {
+                                new Project { Name = "web", Type = ProjectTypeEnum.Node },
+                                new Project { Name = "Test.Harness", Type = ProjectTypeEnum.CSharp, IsTestProject = true }
                             };
                             List<Signal> signals = scoring.Score(repo, projects, new List<Dependency>(), null, false);
                             AssertStatus(signals, SignalTypeEnum.Telemetry, HealthStatusEnum.NotApplicable);
