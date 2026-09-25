@@ -110,6 +110,36 @@ namespace CodeHub.Core.Database.Sqlite
                     // Column already exists on an already-migrated database.
                 }
             }
+
+            await MigrateScanSelectionsNoCaseAsync(token).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Rebuild scan_selections so its path uniqueness is case-insensitive (COLLATE NOCASE).
+        /// Older databases could hold case-variant duplicates (e.g. C:\Code\X and c:\code\X);
+        /// the earliest-created row of each is kept. Runs once: skipped when already migrated.
+        /// </summary>
+        private async Task MigrateScanSelectionsNoCaseAsync(CancellationToken token)
+        {
+            DataTable schema = await ExecuteQueryAsync(
+                "SELECT sql FROM sqlite_master WHERE type='table' AND name='scan_selections';", false, token).ConfigureAwait(false);
+            if (schema.Rows.Count == 0) return;
+
+            string sql = schema.Rows[0]["sql"] as string;
+            if (sql != null && sql.IndexOf("COLLATE NOCASE", StringComparison.OrdinalIgnoreCase) >= 0) return;
+
+            List<string> queries = new List<string>
+            {
+                "DROP TABLE IF EXISTS scan_selections_migrate;",
+                "ALTER TABLE scan_selections RENAME TO scan_selections_migrate;",
+                "DROP INDEX IF EXISTS idx_scan_selections_included;",
+                TableQueries.ScanSelections,
+                "INSERT OR IGNORE INTO scan_selections (id, path, included, createdutc) " +
+                    "SELECT id, path, included, createdutc FROM scan_selections_migrate ORDER BY createdutc ASC, rowid ASC;",
+                "DROP TABLE scan_selections_migrate;"
+            };
+
+            await ExecuteQueriesAsync(queries, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />

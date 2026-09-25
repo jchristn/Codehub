@@ -2,12 +2,16 @@ namespace Test.Shared
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Threading.Tasks;
+    using CodeHub.Core.Database;
+    using CodeHub.Core.Database.Sqlite;
     using CodeHub.Core.Enums;
     using CodeHub.Core.Models;
     using CodeHub.Core.Serialization;
     using CodeHub.Core.Services;
     using CodeHub.Core.Services.Collectors;
+    using Microsoft.Data.Sqlite;
     using Touchstone.Core;
 
     /// <summary>
@@ -285,6 +289,81 @@ namespace Test.Shared
                             AssertTrue(SelectionService.StateFor("C:\\code\\Dell\\Legacy\\Sub", sets) == SelectionStateEnum.Excluded, "excluded descendant");
                             AssertTrue(SelectionService.StateFor("C:\\code\\Dell\\Active", sets) == SelectionStateEnum.Selected, "sibling still selected");
                             return Task.CompletedTask;
+                        }),
+
+                    new TestCaseDescriptor("Selection", "OnDiskCasing", "Paths resolve to their on-disk casing",
+                        executeAsync: _ =>
+                        {
+                            string root = Path.Combine(Path.GetTempPath(), "codehub-case-" + Guid.NewGuid().ToString("N"));
+                            string actual = Path.Combine(root, "MixedCase", "Inner");
+                            Directory.CreateDirectory(actual);
+                            try
+                            {
+                                string lowered = Path.Combine(root, "mixedcase", "inner");
+                                if (!OperatingSystem.IsLinux()) // case-sensitive filesystem: lowered path does not exist
+                                    AssertTrue(SelectionService.ResolveOnDiskCasing(lowered) == actual, "lowered path resolves to on-disk casing");
+                                AssertTrue(SelectionService.ResolveOnDiskCasing(actual) == actual, "exact path unchanged");
+                                string missing = Path.Combine(actual, "NotThere");
+                                AssertTrue(SelectionService.ResolveOnDiskCasing(missing) == missing, "missing segment keeps given casing");
+                            }
+                            finally
+                            {
+                                Directory.Delete(root, true);
+                            }
+                            return Task.CompletedTask;
+                        }),
+
+                    new TestCaseDescriptor("Selection", "NoCaseMigration", "Migration dedupes case variants and lookups ignore case",
+                        executeAsync: async _ =>
+                        {
+                            string dir = Path.Combine(Path.GetTempPath(), "codehub-db-" + Guid.NewGuid().ToString("N"));
+                            Directory.CreateDirectory(dir);
+                            string file = Path.Combine(dir, "codehub.db");
+                            try
+                            {
+                                // Pre-migration schema holding case-variant duplicates.
+                                using (SqliteDatabaseDriver legacy = new SqliteDatabaseDriver(new DatabaseSettings { Filename = file }))
+                                {
+                                    await legacy.ExecuteQueriesAsync(new List<string>
+                                    {
+                                        "CREATE TABLE scan_selections (id TEXT PRIMARY KEY, path TEXT NOT NULL UNIQUE, included INTEGER NOT NULL DEFAULT 1, createdutc TEXT NOT NULL);",
+                                        "INSERT INTO scan_selections VALUES ('a', 'C:\\Code\\Pneuma', 1, '2026-01-01T00:00:00Z');",
+                                        "INSERT INTO scan_selections VALUES ('b', 'c:\\code\\pneuma', 1, '2026-02-01T00:00:00Z');",
+                                        "INSERT INTO scan_selections VALUES ('c', 'C:\\Code\\Other', 0, '2026-01-01T00:00:00Z');"
+                                    }).ConfigureAwait(false);
+                                }
+
+                                using (DatabaseDriverBase db = await DatabaseDriverFactory.CreateAndInitializeAsync(new DatabaseSettings { Filename = file }).ConfigureAwait(false))
+                                {
+                                    List<ScanSelection> rows = await db.Selections.EnumerateAsync().ConfigureAwait(false);
+                                    AssertTrue(rows.Count == 2, "duplicate removed (got " + rows.Count + ")");
+                                    AssertTrue(rows.Exists(r => r.Id == "a" && r.Path == "C:\\Code\\Pneuma"), "earliest row kept");
+
+                                    await db.Selections.UpsertAsync(new ScanSelection { Path = "c:\\code\\other", Included = true }).ConfigureAwait(false);
+                                    rows = await db.Selections.EnumerateAsync().ConfigureAwait(false);
+                                    AssertTrue(rows.Count == 2, "case-variant upsert updates instead of inserting");
+                                    AssertTrue(rows.Exists(r => r.Id == "c" && r.Path == "c:\\code\\other" && r.Included), "upsert rewrote path and included");
+
+                                    bool rejected = false;
+                                    try
+                                    {
+                                        await db.ExecuteQueryAsync("INSERT INTO scan_selections VALUES ('d', 'C:\\CODE\\OTHER', 1, '2026-03-01T00:00:00Z');").ConfigureAwait(false);
+                                    }
+                                    catch (SqliteException)
+                                    {
+                                        rejected = true;
+                                    }
+                                    AssertTrue(rejected, "schema rejects a case-variant duplicate insert");
+
+                                    await db.Selections.DeleteByPathAsync("C:\\CODE\\PNEUMA").ConfigureAwait(false);
+                                    AssertTrue(await db.Selections.CountAsync().ConfigureAwait(false) == 1, "delete matches case-insensitively");
+                                }
+                            }
+                            finally
+                            {
+                                SqliteConnection.ClearAllPools();
+                                Directory.Delete(dir, true);
+                            }
                         })
                 });
         }

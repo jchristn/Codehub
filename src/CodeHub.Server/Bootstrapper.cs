@@ -85,6 +85,8 @@ namespace CodeHub.Server
             _Scan = new ScanService(_Db, _Settings, _Logging, gitHub, scoring);
 
             SelectionService selection = new SelectionService(_Db);
+            int recased = await selection.NormalizeStoredCasingAsync(_Cts.Token).ConfigureAwait(false);
+            if (recased > 0) _Logging.Info(Header + "normalized casing of " + recased + " scan selection path(s)");
 
             ServiceContext ctx = new ServiceContext
             {

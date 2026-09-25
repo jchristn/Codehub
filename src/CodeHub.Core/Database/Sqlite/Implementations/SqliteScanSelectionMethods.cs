@@ -39,28 +39,18 @@ namespace CodeHub.Core.Database.Sqlite.Implementations
         {
             if (selection == null) throw new ArgumentNullException(nameof(selection));
 
-            ScanSelection existing = await ReadByPathAsync(selection.Path, token).ConfigureAwait(false);
-            if (existing != null) selection.Id = existing.Id;
-
-            string sql;
-            if (existing != null)
-            {
-                sql =
-                    "UPDATE scan_selections SET included=" + Sanitizer.Bool(selection.Included) +
-                    " WHERE path=" + Sanitizer.Quote(selection.Path) + ";";
-            }
-            else
-            {
-                sql =
-                    "INSERT INTO scan_selections (id, path, included, createdutc) VALUES (" +
-                    Sanitizer.Quote(selection.Id) + ", " +
-                    Sanitizer.Quote(selection.Path) + ", " +
-                    Sanitizer.Bool(selection.Included) + ", " +
-                    Sanitizer.Timestamp(selection.CreatedUtc) + ");";
-            }
+            // Single atomic statement: the path column is UNIQUE COLLATE NOCASE, so a case-variant
+            // of an existing path updates that row (taking the new casing) instead of adding a duplicate.
+            string sql =
+                "INSERT INTO scan_selections (id, path, included, createdutc) VALUES (" +
+                Sanitizer.Quote(selection.Id) + ", " +
+                Sanitizer.Quote(selection.Path) + ", " +
+                Sanitizer.Bool(selection.Included) + ", " +
+                Sanitizer.Timestamp(selection.CreatedUtc) + ") " +
+                "ON CONFLICT(path) DO UPDATE SET included=excluded.included, path=excluded.path;";
 
             await _Db.ExecuteQueryAsync(sql, false, token).ConfigureAwait(false);
-            return selection;
+            return await ReadByPathAsync(selection.Path, token).ConfigureAwait(false) ?? selection;
         }
 
         /// <inheritdoc />
@@ -68,7 +58,7 @@ namespace CodeHub.Core.Database.Sqlite.Implementations
         {
             if (String.IsNullOrEmpty(path)) throw new ArgumentNullException(nameof(path));
             DataTable table = await _Db.ExecuteQueryAsync(
-                "SELECT * FROM scan_selections WHERE path=" + Sanitizer.Quote(path) + ";", false, token).ConfigureAwait(false);
+                "SELECT * FROM scan_selections WHERE path=" + Sanitizer.Quote(path) + " COLLATE NOCASE;", false, token).ConfigureAwait(false);
             if (table.Rows.Count == 0) return null;
             return FromRow(table.Rows[0]);
         }
@@ -88,7 +78,7 @@ namespace CodeHub.Core.Database.Sqlite.Implementations
         {
             if (String.IsNullOrEmpty(path)) throw new ArgumentNullException(nameof(path));
             await _Db.ExecuteQueryAsync(
-                "DELETE FROM scan_selections WHERE path=" + Sanitizer.Quote(path) + ";", false, token).ConfigureAwait(false);
+                "DELETE FROM scan_selections WHERE path=" + Sanitizer.Quote(path) + " COLLATE NOCASE;", false, token).ConfigureAwait(false);
         }
 
         /// <inheritdoc />

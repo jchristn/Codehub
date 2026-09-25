@@ -183,7 +183,7 @@ CREATE INDEX IF NOT EXISTS idx_github_snapshots_repoid ON github_snapshots(repoi
         public static readonly string ScanSelections = @"
 CREATE TABLE IF NOT EXISTS scan_selections (
     id TEXT PRIMARY KEY,
-    path TEXT NOT NULL UNIQUE,
+    path TEXT NOT NULL UNIQUE COLLATE NOCASE,
     included INTEGER NOT NULL DEFAULT 1,
     createdutc TEXT NOT NULL
 );

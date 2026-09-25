@@ -58,7 +58,7 @@ namespace CodeHub.Core.Services
         /// <param name="token">Cancellation token.</param>
         public async Task SelectAsync(string path, CancellationToken token = default)
         {
-            path = Normalize(path);
+            path = ResolveOnDiskCasing(Normalize(path));
             if (String.IsNullOrEmpty(path)) return;
 
             List<ScanSelection> all = await _Db.Selections.EnumerateAsync(token).ConfigureAwait(false);
@@ -79,7 +79,7 @@ namespace CodeHub.Core.Services
         /// <param name="token">Cancellation token.</param>
         public async Task DeselectAsync(string path, CancellationToken token = default)
         {
-            path = Normalize(path);
+            path = ResolveOnDiskCasing(Normalize(path));
             if (String.IsNullOrEmpty(path)) return;
 
             List<ScanSelection> all = await _Db.Selections.EnumerateAsync(token).ConfigureAwait(false);
@@ -157,7 +157,7 @@ namespace CodeHub.Core.Services
             {
                 foreach (string path in selectedPaths)
                 {
-                    string normalized = Normalize(path);
+                    string normalized = ResolveOnDiskCasing(Normalize(path));
                     if (!String.IsNullOrEmpty(normalized))
                         await _Db.Selections.UpsertAsync(new ScanSelection { Path = normalized, Included = true }, token).ConfigureAwait(false);
                 }
@@ -166,16 +166,80 @@ namespace CodeHub.Core.Services
             {
                 foreach (string path in excludedPaths)
                 {
-                    string normalized = Normalize(path);
+                    string normalized = ResolveOnDiskCasing(Normalize(path));
                     if (!String.IsNullOrEmpty(normalized))
                         await _Db.Selections.UpsertAsync(new ScanSelection { Path = normalized, Included = false }, token).ConfigureAwait(false);
                 }
             }
         }
 
+        /// <summary>
+        /// Rewrite stored selection paths to their real on-disk casing. Paths that no longer
+        /// exist are left as-is.
+        /// </summary>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>Number of rows whose path was rewritten.</returns>
+        public async Task<int> NormalizeStoredCasingAsync(CancellationToken token = default)
+        {
+            int updated = 0;
+            List<ScanSelection> all = await _Db.Selections.EnumerateAsync(token).ConfigureAwait(false);
+            foreach (ScanSelection selection in all)
+            {
+                string resolved = ResolveOnDiskCasing(Normalize(selection.Path));
+                if (String.IsNullOrEmpty(resolved) || String.Equals(resolved, selection.Path, StringComparison.Ordinal)) continue;
+
+                // Upsert matches case-insensitively, so this rewrites the existing row's path.
+                await _Db.Selections.UpsertAsync(new ScanSelection { Path = resolved, Included = selection.Included }, token).ConfigureAwait(false);
+                updated++;
+            }
+            return updated;
+        }
+
         #endregion
 
         #region Public-Static-Path-Helpers
+
+        /// <summary>
+        /// Resolve a full path to the casing used on disk (e.g. c:/code/foo becomes C:/Code/Foo on Windows).
+        /// Segments that cannot be resolved (missing, inaccessible) keep their given casing.
+        /// </summary>
+        /// <param name="path">Full, normalized path.</param>
+        /// <returns>Path with on-disk casing.</returns>
+        public static string ResolveOnDiskCasing(string path)
+        {
+            if (String.IsNullOrWhiteSpace(path)) return path;
+
+            try
+            {
+                string root = System.IO.Path.GetPathRoot(path);
+                if (String.IsNullOrEmpty(root)) return path;
+
+                // Drive letters are case-insensitive; present them upper-cased (C:\).
+                string current = root.Length >= 2 && root[1] == ':' ? root.ToUpperInvariant() : root;
+                string[] segments = path.Substring(root.Length).Split(
+                    new[] { System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar },
+                    StringSplitOptions.RemoveEmptyEntries);
+
+                bool resolving = true;
+                foreach (string segment in segments)
+                {
+                    string next = segment;
+                    if (resolving)
+                    {
+                        string match = FindChildName(current, segment);
+                        if (match != null) next = match;
+                        else resolving = false; // below a missing segment, nothing more to resolve
+                    }
+                    current = System.IO.Path.Combine(current, next);
+                }
+
+                return current.TrimEnd('\\', '/');
+            }
+            catch (Exception)
+            {
+                return path;
+            }
+        }
 
         /// <summary>
         /// Normalize a path for comparison (full path, trimmed trailing separators).
@@ -216,6 +280,26 @@ namespace CodeHub.Core.Services
             if (String.Equals(c, p, StringComparison.OrdinalIgnoreCase)) return false;
             return c.StartsWith(p + "\\", StringComparison.OrdinalIgnoreCase) ||
                    c.StartsWith(p + "/", StringComparison.OrdinalIgnoreCase);
+        }
+
+        #endregion
+
+        #region Private-Methods
+
+        private static string FindChildName(string parent, string name)
+        {
+            if (!System.IO.Directory.Exists(parent)) return null;
+
+            // Prefer an exact match (case-sensitive filesystems may hold several case variants),
+            // otherwise take the first case-insensitive match.
+            string match = null;
+            foreach (string entryPath in System.IO.Directory.EnumerateFileSystemEntries(parent))
+            {
+                string entry = System.IO.Path.GetFileName(entryPath);
+                if (String.Equals(entry, name, StringComparison.Ordinal)) return entry;
+                if (match == null && String.Equals(entry, name, StringComparison.OrdinalIgnoreCase)) match = entry;
+            }
+            return match;
         }
 
         #endregion
