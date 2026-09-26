@@ -93,7 +93,7 @@ function BulkCustomActionModal({ apiClient, repositories, customActions, onClose
 
         <AgentPicker agent={agent} dangerous={dangerous} onAgentChange={setAgent} onDangerousChange={setDangerous} />
 
-        <label className="ca-field">
+        <label className="ca-field ca-field-grow">
           <span className="ca-label">{t('customActions.prompt')}</span>
           <textarea
             className="ca-prompt mono"

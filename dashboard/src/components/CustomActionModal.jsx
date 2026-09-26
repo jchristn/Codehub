@@ -42,7 +42,7 @@ function CustomActionModal({ action, onSave, onClose, busy }) {
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('customActions.namePlaceholder')} autoFocus />
         </label>
 
-        <label className="ca-field">
+        <label className="ca-field ca-field-grow">
           <span className="ca-label">{t('customActions.prompt')}</span>
           <textarea
             className="ca-prompt mono"
