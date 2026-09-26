@@ -1,24 +1,21 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Modal from './Modal';
-import { AGENTS, agentDangerousFlag } from '../utils/constants';
 
 /**
- * Create/edit a custom action: name, agent, optional dangerous flag, and default prompt.
+ * Create/edit a custom action: a name and a default prompt. Actions are agent-agnostic; the
+ * agent is chosen when the action is run.
  */
 function CustomActionModal({ action, onSave, onClose, busy }) {
   const { t } = useTranslation();
   const [name, setName] = useState(action?.name || '');
-  const [agent, setAgent] = useState(action?.agent || 'claude');
-  const [dangerous, setDangerous] = useState(action?.dangerous || false);
   const [prompt, setPrompt] = useState(action?.prompt || '');
 
-  const flag = agentDangerousFlag(agent);
   const canSave = name.trim().length > 0 && !busy;
 
   const submit = () => {
     if (!canSave) return;
-    onSave({ name: name.trim(), agent, dangerous: flag ? dangerous : false, prompt });
+    onSave({ name: name.trim(), prompt });
   };
 
   return (
@@ -44,24 +41,6 @@ function CustomActionModal({ action, onSave, onClose, busy }) {
           <span className="ca-label">{t('customActions.name')}</span>
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('customActions.namePlaceholder')} autoFocus />
         </label>
-
-        <label className="ca-field">
-          <span className="ca-label">{t('customActions.agent')}</span>
-          <select value={agent} onChange={(e) => setAgent(e.target.value)}>
-            {AGENTS.map((a) => (
-              <option key={a.value} value={a.value}>{a.label}</option>
-            ))}
-          </select>
-        </label>
-
-        {flag && (
-          <label className="ca-flag">
-            <input type="checkbox" checked={dangerous} onChange={(e) => setDangerous(e.target.checked)} />
-            <span>
-              {t('customActions.dangerous')} <code>{flag}</code>
-            </span>
-          </label>
-        )}
 
         <label className="ca-field">
           <span className="ca-label">{t('customActions.prompt')}</span>

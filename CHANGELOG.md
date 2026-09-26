@@ -3,6 +3,21 @@
 All notable changes to CodeHub are documented here. While CodeHub is in the 0.x line it is
 **alpha software** — APIs, storage, settings, and the dashboard may change between releases.
 
+## [Unreleased]
+
+### Changed
+- **Custom actions are agent-agnostic prompts.** An action now stores only a name and a prompt; the
+  agent (Claude Code, Codex, mux, or OpenCode) and its dangerous flag are chosen each time the action
+  is run, from the dashboard or the API. The run dialogs default to the last agent and flag used. Existing
+  actions are migrated automatically (their stored agent and dangerous flag are dropped).
+- `POST /v1.0/api/custom-actions` and `PUT /v1.0/api/custom-actions/{id}` take `{ name, prompt }`;
+  `agent` and `dangerous` are no longer accepted or returned.
+- `POST /v1.0/api/repositories/{id}/run-agent` rejects an unknown agent with a 400 instead of a 500.
+
+### Added
+- `POST /v1.0/api/custom-actions/{id}/run` runs an action in one or more repositories with
+  `{ repositoryIds, agent, dangerous, prompt? }` and returns per-repository results.
+
 ## [0.1.0] — 2026-08-15
 
 First public alpha.

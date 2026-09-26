@@ -191,14 +191,13 @@ CREATE INDEX IF NOT EXISTS idx_scan_selections_included ON scan_selections(inclu
 ";
 
         /// <summary>
-        /// Custom actions table (user-defined agent launchers shown in the actions menu).
+        /// Custom actions table (user-defined, agent-agnostic prompts shown in the actions menu;
+        /// the agent is chosen when an action is run).
         /// </summary>
         public static readonly string CustomActions = @"
 CREATE TABLE IF NOT EXISTS custom_actions (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
-    agent TEXT NOT NULL,
-    dangerous INTEGER NOT NULL DEFAULT 0,
     prompt TEXT,
     createdutc TEXT NOT NULL
 );

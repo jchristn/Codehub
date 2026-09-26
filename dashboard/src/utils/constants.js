@@ -10,7 +10,8 @@ export const STORAGE = {
   repoHiddenColumns: 'codehub.repoHiddenColumns',
   repoAutoRefresh: 'codehub.repoAutoRefresh',
   requestPageSize: 'codehub.requestPageSize',
-  explorerHistory: 'codehub.explorerHistory'
+  explorerHistory: 'codehub.explorerHistory',
+  lastAgentRun: 'codehub.lastAgentRun'
 };
 
 // When the dashboard is served by the backend (at /dashboard) the origin is the backend.
@@ -52,7 +53,10 @@ export const SIGNAL_STATUS_OPTIONS = ['Green', 'Yellow', 'Red', 'NotApplicable',
 
 export const HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD'];
 
-/** Agents that custom actions can launch. `dangerousFlag` is null when the agent has none. */
+/**
+ * Agents a custom action can run under. Custom actions are agent-agnostic prompts; the agent is
+ * chosen each time one is run. `dangerousFlag` is null when the agent has none.
+ */
 export const AGENTS = [
   { value: 'claude', label: 'Claude Code', dangerousFlag: '--dangerously-skip-permissions' },
   { value: 'codex', label: 'Codex', dangerousFlag: '--yolo' },
@@ -62,6 +66,30 @@ export const AGENTS = [
 
 export const agentLabel = (value) => (AGENTS.find((a) => a.value === value) || {}).label || value;
 export const agentDangerousFlag = (value) => (AGENTS.find((a) => a.value === value) || {}).dangerousFlag || null;
+
+/**
+ * The agent and dangerous-flag choice last used to run a custom action (per browser). Defaults
+ * to Claude Code without the dangerous flag.
+ */
+export function getLastAgentRun() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE.lastAgentRun) || 'null');
+    if (saved && AGENTS.some((a) => a.value === saved.agent)) {
+      return { agent: saved.agent, dangerous: saved.dangerous === true };
+    }
+  } catch {
+    // Storage unavailable (private window, blocked site data) or unreadable.
+  }
+  return { agent: AGENTS[0].value, dangerous: false };
+}
+
+export function setLastAgentRun(agent, dangerous) {
+  try {
+    localStorage.setItem(STORAGE.lastAgentRun, JSON.stringify({ agent, dangerous }));
+  } catch {
+    // Storage unavailable; the choice just isn't remembered.
+  }
+}
 
 /** Chart range presets — bucket counts must match the backend contract. */
 export const CHART_RANGES = [

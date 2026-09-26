@@ -1,21 +1,23 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Modal from './Modal';
+import AgentPicker from './AgentPicker';
 import { useToast } from '../context/ToastContext';
-import { AGENTS, agentDangerousFlag } from '../utils/constants';
+import { agentDangerousFlag, getLastAgentRun, setLastAgentRun } from '../utils/constants';
 
 /**
- * Apply a custom action to several repositories at once. The agent, dangerous flag,
- * and prompt are pre-filled from the chosen action but editable; on run, each
- * repository launches the agent in its own terminal window concurrently.
+ * Apply a custom action to several repositories at once. Actions are agent-agnostic, so the
+ * agent (and its dangerous flag) is chosen here, defaulting to the last choice made; the prompt
+ * is pre-filled from the chosen action but editable. On run, each repository launches the agent
+ * in its own terminal window.
  */
 function BulkCustomActionModal({ apiClient, repositories, customActions, onClose, onDone }) {
   const { t } = useTranslation();
   const toast = useToast();
 
   const [actionId, setActionId] = useState(customActions[0]?.id || '');
-  const [agent, setAgent] = useState(customActions[0]?.agent || 'claude');
-  const [dangerous, setDangerous] = useState(customActions[0]?.dangerous || false);
+  const [agent, setAgent] = useState(() => getLastAgentRun().agent);
+  const [dangerous, setDangerous] = useState(() => getLastAgentRun().dangerous);
   const [prompt, setPrompt] = useState(customActions[0]?.prompt || '');
   const [busy, setBusy] = useState(false);
 
@@ -24,24 +26,34 @@ function BulkCustomActionModal({ apiClient, repositories, customActions, onClose
   const pickAction = (id) => {
     setActionId(id);
     const a = customActions.find((x) => x.id === id);
-    if (a) {
-      setAgent(a.agent);
-      setDangerous(a.dangerous);
-      setPrompt(a.prompt);
+    if (a) setPrompt(a.prompt);
+  };
+
+  // With a saved action, one request runs it everywhere; without one (no actions defined yet),
+  // launch the ad-hoc prompt per repository.
+  const launch = async (options) => {
+    if (actionId) {
+      const res = await apiClient.runCustomAction(actionId, { ...options, repositoryIds: repositories.map((r) => r.id) });
+      return { ok: res?.launched || 0, failed: res?.failed || 0 };
     }
+    const results = await Promise.allSettled(repositories.map((repo) => apiClient.runAgent(repo.id, options)));
+    const ok = results.filter((r) => r.status === 'fulfilled').length;
+    return { ok, failed: results.length - ok };
   };
 
   const run = async () => {
     setBusy(true);
-    const results = await Promise.allSettled(
-      repositories.map((repo) => apiClient.runAgent(repo.id, { agent, dangerous: flag ? dangerous : false, prompt }))
-    );
-    const ok = results.filter((r) => r.status === 'fulfilled').length;
-    const failed = results.length - ok;
-    if (failed === 0) toast.success(t('bulkAction.launched', { count: ok }));
-    else toast.warning(t('bulkAction.partial', { ok, failed }));
-    if (onDone) onDone();
-    onClose();
+    setLastAgentRun(agent, dangerous);
+    try {
+      const { ok, failed } = await launch({ agent, dangerous: flag ? dangerous : false, prompt });
+      if (failed === 0) toast.success(t('bulkAction.launched', { count: ok }));
+      else toast.warning(t('bulkAction.partial', { ok, failed }));
+      if (onDone) onDone();
+      onClose();
+    } catch (e) {
+      toast.error(e?.body || t('launch.failed'));
+      setBusy(false);
+    }
   };
 
   return (
@@ -79,23 +91,7 @@ function BulkCustomActionModal({ apiClient, repositories, customActions, onClose
           </label>
         )}
 
-        <label className="ca-field">
-          <span className="ca-label">{t('customActions.agent')}</span>
-          <select value={agent} onChange={(e) => setAgent(e.target.value)}>
-            {AGENTS.map((a) => (
-              <option key={a.value} value={a.value}>{a.label}</option>
-            ))}
-          </select>
-        </label>
-
-        {flag && (
-          <label className="ca-flag">
-            <input type="checkbox" checked={dangerous} onChange={(e) => setDangerous(e.target.checked)} />
-            <span>
-              {t('customActions.dangerous')} <code>{flag}</code>
-            </span>
-          </label>
-        )}
+        <AgentPicker agent={agent} dangerous={dangerous} onAgentChange={setAgent} onDangerousChange={setDangerous} />
 
         <label className="ca-field">
           <span className="ca-label">{t('customActions.prompt')}</span>

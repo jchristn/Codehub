@@ -4,7 +4,8 @@ namespace CodeHub.Core.Models
     using CodeHub.Core.Helpers;
 
     /// <summary>
-    /// A user-defined action that launches an agentic CLI in a repository with a default prompt.
+    /// A user-defined, agent-agnostic prompt that can be run against one or more repositories.
+    /// The agent (and its dangerous flag) is chosen when the action is invoked, not stored here.
     /// Stored in the database so it survives restarts and appears in the repository actions menu.
     /// </summary>
     public class CustomAction
@@ -33,17 +34,7 @@ namespace CodeHub.Core.Models
         public string Name { get; set; } = String.Empty;
 
         /// <summary>
-        /// Agent to launch: claude, codex, mux, or opencode.
-        /// </summary>
-        public string Agent { get; set; } = "claude";
-
-        /// <summary>
-        /// Whether to pass the agent's dangerous flag (ignored by agents that have none, e.g. opencode).
-        /// </summary>
-        public bool Dangerous { get; set; } = false;
-
-        /// <summary>
-        /// Default prompt passed to the agent (editable at invoke time).
+        /// Default prompt passed to the agent chosen at invoke time (editable at invoke time).
         /// </summary>
         public string Prompt { get; set; } = String.Empty;
 

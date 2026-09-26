@@ -13,17 +13,7 @@ namespace CodeHub.Core.Requests
         public string Name { get; set; }
 
         /// <summary>
-        /// Agent to launch: claude, codex, mux, or opencode.
-        /// </summary>
-        public string Agent { get; set; }
-
-        /// <summary>
-        /// Whether to pass the agent's dangerous flag.
-        /// </summary>
-        public bool Dangerous { get; set; }
-
-        /// <summary>
-        /// Default prompt to pass to the agent.
+        /// Default prompt to pass to whichever agent runs the action.
         /// </summary>
         public string Prompt { get; set; }
 

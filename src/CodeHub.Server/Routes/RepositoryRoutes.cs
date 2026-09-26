@@ -6,6 +6,7 @@ namespace CodeHub.Server.Routes
     using System.Linq;
     using System.Threading.Tasks;
     using CodeHub.Core.Enums;
+    using CodeHub.Core.Helpers;
     using CodeHub.Core.Models;
     using CodeHub.Core.Requests;
     using CodeHub.Core.Responses;
@@ -353,17 +354,18 @@ namespace CodeHub.Server.Routes
 
             string body = ctx.Request.DataAsString;
             RunAgentRequest request = String.IsNullOrEmpty(body) ? null : _Ctx.Serializer.DeserializeJson<RunAgentRequest>(body);
-            if (request == null || String.IsNullOrEmpty(request.Agent))
+            string agent = AgentHelper.Normalize(request?.Agent);
+            if (agent == null)
             {
-                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 400, new ErrorResponse("BadRequest", "An agent is required.")).ConfigureAwait(false);
+                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 400, new ErrorResponse("BadRequest", AgentHelper.InvalidMessage())).ConfigureAwait(false);
                 return;
             }
 
             try
             {
-                _Ctx.Launcher.OpenAgentPrompt(request.Agent, repo.Path, request.Dangerous, request.Prompt);
+                _Ctx.Launcher.OpenAgentPrompt(agent, repo.Path, request.Dangerous, request.Prompt);
                 await RouteHelper.SendJson(ctx, _Ctx.Serializer, 200,
-                    new Dictionary<string, object> { { "launched", true }, { "agent", request.Agent } }).ConfigureAwait(false);
+                    new Dictionary<string, object> { { "launched", true }, { "agent", agent } }).ConfigureAwait(false);
             }
             catch (NotSupportedException e)
             {

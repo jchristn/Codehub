@@ -66,19 +66,15 @@ namespace CodeHub.Core.Database.Sqlite.Implementations
                 sql =
                     "UPDATE custom_actions SET " +
                     "name=" + Sanitizer.Quote(action.Name) + ", " +
-                    "agent=" + Sanitizer.Quote(action.Agent) + ", " +
-                    "dangerous=" + Sanitizer.Bool(action.Dangerous) + ", " +
                     "prompt=" + Sanitizer.Quote(action.Prompt) + " " +
                     "WHERE id=" + Sanitizer.Quote(action.Id) + ";";
             }
             else
             {
                 sql =
-                    "INSERT INTO custom_actions (id, name, agent, dangerous, prompt, createdutc) VALUES (" +
+                    "INSERT INTO custom_actions (id, name, prompt, createdutc) VALUES (" +
                     Sanitizer.Quote(action.Id) + ", " +
                     Sanitizer.Quote(action.Name) + ", " +
-                    Sanitizer.Quote(action.Agent) + ", " +
-                    Sanitizer.Bool(action.Dangerous) + ", " +
                     Sanitizer.Quote(action.Prompt) + ", " +
                     Sanitizer.Timestamp(action.CreatedUtc) + ");";
             }
@@ -105,8 +101,6 @@ namespace CodeHub.Core.Database.Sqlite.Implementations
             {
                 Id = row.GetString("id"),
                 Name = row.GetString("name"),
-                Agent = row.GetString("agent"),
-                Dangerous = row.GetBool("dangerous"),
                 Prompt = row.GetString("prompt"),
                 CreatedUtc = row.GetDateTimeRequired("createdutc")
             };

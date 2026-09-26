@@ -1,7 +1,7 @@
 namespace CodeHub.Core.Requests
 {
     /// <summary>
-    /// Request to launch an agent in a repository with a (possibly edited) prompt.
+    /// Request to launch an agent in a single repository with an ad-hoc prompt.
     /// </summary>
     public class RunAgentRequest
     {
@@ -18,7 +18,7 @@ namespace CodeHub.Core.Requests
         public bool Dangerous { get; set; }
 
         /// <summary>
-        /// Prompt to pass to the agent (may be edited from the action's default).
+        /// Prompt to pass to the agent.
         /// </summary>
         public string Prompt { get; set; }
 

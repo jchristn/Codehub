@@ -79,6 +79,9 @@ date, and languages — then rolls it all into one overall grade so you can sort
   update, and dependency freshness across all of them.
 - **Jump straight into work.** On Windows, open any repo in Explorer, a terminal, **Claude**, or
   **Codex** right from its row.
+- **Custom actions.** Save reusable prompts ("review this repo", "bump dependencies") and run them
+  against one repository or a whole selection. Actions aren't tied to an agent — you pick Claude
+  Code, Codex, mux, or OpenCode each time you run one.
 - **Batteries included.** Editable settings, an OpenAPI-driven API Explorer, request history, and a
   dashboard served by the backend itself at `/dashboard` — no separate web server to run.
 - **Local and quiet.** SQLite on disk, a single static API key, and no telemetry phoned home.
@@ -204,6 +207,30 @@ the file directly or use the **Settings** page in the dashboard, which writes ba
 A few environment variables (`CODEHUB_AUTH_API_KEY`, `CODEHUB_GITHUB_PAT`, `CODEHUB_SCAN_ROOT`,
 `CODEHUB_PORT`) override the corresponding values, and `--port` / `--hostname` / `--root` override on
 the command line.
+
+## Custom actions
+
+A custom action is a named, reusable **prompt** — nothing more. It isn't tied to an agent harness:
+you choose the agent (Claude Code, Codex, mux, or OpenCode) and whether to pass its dangerous flag
+each time you run it. Define actions on the **Custom Actions** page; run one from a repository's
+row menu, or select several rows and use **Apply Custom Action** to run it in each (one terminal per
+repository). The prompt is pre-filled from the action and editable before launch, and the dashboard
+remembers the last agent and dangerous-flag choice you made. Launching requires the CodeHub server
+to run on Windows.
+
+The same thing over the API:
+
+```bash
+# Create an action (name + prompt only)
+curl -X POST http://127.0.0.1:8090/v1.0/api/custom-actions   -H "Authorization: Bearer codehub-dev-key" -H "Content-Type: application/json"   -d '{"name":"Review","prompt":"Review this repository and list the top risks."}'
+
+# Run it in one or more repositories with the agent of your choice
+curl -X POST http://127.0.0.1:8090/v1.0/api/custom-actions/act_.../run   -H "Authorization: Bearer codehub-dev-key" -H "Content-Type: application/json"   -d '{"repositoryIds":["repo_...","repo_..."],"agent":"codex","dangerous":false}'
+```
+
+`agent` is required (`claude`, `codex`, `mux`, or `opencode`); `prompt` optionally overrides the
+action's stored prompt for this run. The response reports `launched` and `failed` counts plus a
+per-repository `results` list.
 
 ## Filing issues and starting discussions
 

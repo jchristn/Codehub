@@ -152,7 +152,7 @@ class ApiClient {
     });
   }
 
-  /** Launch an agent in a repository with a (possibly edited) prompt — a custom action. */
+  /** Launch an agent in a repository with an ad-hoc prompt. */
   async runAgent(id, { agent, dangerous, prompt }) {
     return this._request('POST', `/v1.0/api/repositories/${encodeURIComponent(id)}/run-agent`, {
       body: { agent, dangerous, prompt }
@@ -175,6 +175,16 @@ class ApiClient {
 
   async deleteCustomAction(id) {
     return this._request('DELETE', `/v1.0/api/custom-actions/${encodeURIComponent(id)}`);
+  }
+
+  /**
+   * Run a custom action in one or more repositories with the chosen agent. `prompt` overrides the
+   * action's stored prompt when provided. Resolves to { launched, failed, results: [...] }.
+   */
+  async runCustomAction(id, { repositoryIds, agent, dangerous, prompt }) {
+    return this._request('POST', `/v1.0/api/custom-actions/${encodeURIComponent(id)}/run`, {
+      body: { repositoryIds, agent, dangerous, prompt }
+    });
   }
 
   async getProject(id) {

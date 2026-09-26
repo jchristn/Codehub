@@ -48,6 +48,7 @@ anywhere dispatches a logout.
 | `/dashboard/home` | Overview: KPI tiles, health distribution, attention list |
 | `/dashboard/repositories` | The main repository table + detail modal |
 | `/dashboard/scans` | Scan run history + live in-flight progress |
+| `/dashboard/custom-actions` | Manage custom actions (agent-agnostic prompts; the agent is picked at run time) |
 | `/dashboard/request-history` | KPI strip + activity chart + inspector modal |
 | `/dashboard/api-explorer` | OpenAPI-driven API playground |
 | `/dashboard/settings` | Server info / configuration |

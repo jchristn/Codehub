@@ -1,19 +1,20 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Modal from './Modal';
+import AgentPicker from './AgentPicker';
 import { useToast } from '../context/ToastContext';
-import { AGENTS, agentLabel, agentDangerousFlag } from '../utils/constants';
+import { agentLabel, agentDangerousFlag, getLastAgentRun, setLastAgentRun } from '../utils/constants';
 
 /**
- * Invoke a custom action on a repository. The agent, dangerous flag, and prompt are
- * pre-filled from the action but editable before launching; on confirm a terminal opens
- * and the agent runs with the (possibly edited) prompt.
+ * Invoke a custom action on a repository. Actions are agent-agnostic, so the agent (and its
+ * dangerous flag) is chosen here, defaulting to the last choice made; the prompt is pre-filled
+ * from the action but editable. On confirm a terminal opens and the agent runs with the prompt.
  */
 function InvokeCustomActionModal({ apiClient, repository, action, onClose }) {
   const { t } = useTranslation();
   const toast = useToast();
-  const [agent, setAgent] = useState(action.agent || 'claude');
-  const [dangerous, setDangerous] = useState(action.dangerous || false);
+  const [agent, setAgent] = useState(() => getLastAgentRun().agent);
+  const [dangerous, setDangerous] = useState(() => getLastAgentRun().dangerous);
   const [prompt, setPrompt] = useState(action.prompt || '');
   const [busy, setBusy] = useState(false);
 
@@ -21,8 +22,19 @@ function InvokeCustomActionModal({ apiClient, repository, action, onClose }) {
 
   const run = async () => {
     setBusy(true);
+    setLastAgentRun(agent, dangerous);
     try {
-      await apiClient.runAgent(repository.id, { agent, dangerous: flag ? dangerous : false, prompt });
+      const res = await apiClient.runCustomAction(action.id, {
+        repositoryIds: [repository.id],
+        agent,
+        dangerous: flag ? dangerous : false,
+        prompt
+      });
+      if (res && res.failed > 0) {
+        toast.error(res.results?.[0]?.error || t('launch.failed'));
+        setBusy(false);
+        return;
+      }
       toast.success(t('customActions.launched', { name: action.name, agent: agentLabel(agent) }));
       onClose();
     } catch (e) {
@@ -53,23 +65,7 @@ function InvokeCustomActionModal({ apiClient, repository, action, onClose }) {
       <div className="ca-form">
         <p className="mono launch-path">{repository?.path}</p>
 
-        <label className="ca-field">
-          <span className="ca-label">{t('customActions.agent')}</span>
-          <select value={agent} onChange={(e) => setAgent(e.target.value)}>
-            {AGENTS.map((a) => (
-              <option key={a.value} value={a.value}>{a.label}</option>
-            ))}
-          </select>
-        </label>
-
-        {flag && (
-          <label className="ca-flag">
-            <input type="checkbox" checked={dangerous} onChange={(e) => setDangerous(e.target.checked)} />
-            <span>
-              {t('customActions.dangerous')} <code>{flag}</code>
-            </span>
-          </label>
-        )}
+        <AgentPicker agent={agent} dangerous={dangerous} onAgentChange={setAgent} onDangerousChange={setDangerous} />
 
         <label className="ca-field">
           <span className="ca-label">{t('customActions.prompt')}</span>

@@ -8,6 +8,7 @@ namespace Test.Shared
     using CodeHub.Core.Database.Sqlite;
     using CodeHub.Core.Database.Sqlite.Queries;
     using CodeHub.Core.Enums;
+    using CodeHub.Core.Helpers;
     using CodeHub.Core.Models;
     using CodeHub.Core.Serialization;
     using CodeHub.Core.Services;
@@ -35,7 +36,8 @@ namespace Test.Shared
                     DriftSuite(),
                     GitHubRefSuite(),
                     SerializerSuite(),
-                    SelectionSuite()
+                    SelectionSuite(),
+                    CustomActionSuite()
                 };
             }
         }
@@ -429,6 +431,114 @@ namespace Test.Shared
                                     await db.Repositories.UpsertAsync(byPath).ConfigureAwait(false);
                                     repos = await db.Repositories.EnumerateAsync().ConfigureAwait(false);
                                     AssertTrue(repos.Count == 2 && repos.Exists(r => r.Id == "old" && r.Path == "C:\\code\\ARMOR"), "case-variant upsert updates in place");
+                                }
+                            }
+                            finally
+                            {
+                                SqliteConnection.ClearAllPools();
+                                Directory.Delete(dir, true);
+                            }
+                        })
+                });
+        }
+
+        /// <summary>
+        /// Custom action suite: actions are agent-agnostic prompts; the agent is chosen at run time.
+        /// </summary>
+        /// <returns>Suite descriptor.</returns>
+        public static TestSuiteDescriptor CustomActionSuite()
+        {
+            return new TestSuiteDescriptor(
+                suiteId: "CustomAction",
+                displayName: "Custom Actions",
+                cases: new List<TestCaseDescriptor>
+                {
+                    new TestCaseDescriptor("CustomAction", "AgentNormalize", "Supported agents normalize; unknown agents are rejected",
+                        executeAsync: _ =>
+                        {
+                            AssertTrue(AgentHelper.Normalize("claude") == "claude", "claude");
+                            AssertTrue(AgentHelper.Normalize(" Codex ") == "codex", "trimmed and lowercased");
+                            AssertTrue(AgentHelper.Normalize("MUX") == "mux", "mux");
+                            AssertTrue(AgentHelper.Normalize("opencode") == "opencode", "opencode");
+                            AssertTrue(AgentHelper.Normalize("gpt") == null, "unknown agent rejected");
+                            AssertTrue(AgentHelper.Normalize("") == null && AgentHelper.Normalize(null) == null, "empty rejected");
+                            AssertTrue(AgentHelper.InvalidMessage().Contains("claude, codex, mux, opencode"), "message lists agents");
+                            return Task.CompletedTask;
+                        }),
+
+                    new TestCaseDescriptor("CustomAction", "RoundTrip", "Actions store only a name and prompt (newlines preserved)",
+                        executeAsync: async _ =>
+                        {
+                            string dir = Path.Combine(Path.GetTempPath(), "codehub-db-" + Guid.NewGuid().ToString("N"));
+                            Directory.CreateDirectory(dir);
+                            string file = Path.Combine(dir, "codehub.db");
+                            try
+                            {
+                                using (DatabaseDriverBase db = await DatabaseDriverFactory.CreateAndInitializeAsync(new DatabaseSettings { Filename = file }).ConfigureAwait(false))
+                                {
+                                    CustomAction action = new CustomAction { Name = "Review", Prompt = "Review this repo.\nList 'risks' first." };
+                                    await db.CustomActions.UpsertAsync(action).ConfigureAwait(false);
+
+                                    CustomAction read = await db.CustomActions.ReadAsync(action.Id).ConfigureAwait(false);
+                                    AssertTrue(read != null && read.Name == "Review", "read back by id");
+                                    AssertTrue(read.Prompt == "Review this repo.\nList 'risks' first.", "prompt preserved verbatim");
+
+                                    read.Name = "Deep review";
+                                    read.Prompt = "Updated";
+                                    await db.CustomActions.UpsertAsync(read).ConfigureAwait(false);
+                                    List<CustomAction> all = await db.CustomActions.EnumerateAsync().ConfigureAwait(false);
+                                    AssertTrue(all.Count == 1 && all[0].Name == "Deep review" && all[0].Prompt == "Updated", "upsert updates in place");
+
+                                    await db.CustomActions.DeleteAsync(action.Id).ConfigureAwait(false);
+                                    AssertTrue((await db.CustomActions.EnumerateAsync().ConfigureAwait(false)).Count == 0, "deleted");
+                                }
+                            }
+                            finally
+                            {
+                                SqliteConnection.ClearAllPools();
+                                Directory.Delete(dir, true);
+                            }
+                        }),
+
+                    new TestCaseDescriptor("CustomAction", "DropAgentMigration", "Migration drops the legacy agent/dangerous columns and keeps actions",
+                        executeAsync: async _ =>
+                        {
+                            string dir = Path.Combine(Path.GetTempPath(), "codehub-db-" + Guid.NewGuid().ToString("N"));
+                            Directory.CreateDirectory(dir);
+                            string file = Path.Combine(dir, "codehub.db");
+                            try
+                            {
+                                // Pre-migration schema, when each action was tied to one agent.
+                                using (SqliteDatabaseDriver legacy = new SqliteDatabaseDriver(new DatabaseSettings { Filename = file }))
+                                {
+                                    await legacy.ExecuteQueriesAsync(new List<string>
+                                    {
+                                        "CREATE TABLE custom_actions (id TEXT PRIMARY KEY, name TEXT NOT NULL, agent TEXT NOT NULL, dangerous INTEGER NOT NULL DEFAULT 0, prompt TEXT, createdutc TEXT NOT NULL);",
+                                        "INSERT INTO custom_actions VALUES ('act_1', 'Review', 'codex', 1, 'Review this repo.', '2026-01-01T00:00:00Z');",
+                                        "INSERT INTO custom_actions VALUES ('act_2', 'Upgrade', 'claude', 0, NULL, '2026-02-01T00:00:00Z');"
+                                    }).ConfigureAwait(false);
+                                }
+
+                                using (DatabaseDriverBase db = await DatabaseDriverFactory.CreateAndInitializeAsync(new DatabaseSettings { Filename = file }).ConfigureAwait(false))
+                                {
+                                    System.Data.DataTable info = await db.ExecuteQueryAsync("SELECT name FROM pragma_table_info('custom_actions');").ConfigureAwait(false);
+                                    List<string> columns = new List<string>();
+                                    foreach (System.Data.DataRow row in info.Rows) columns.Add(row["name"].ToString());
+                                    AssertTrue(!columns.Contains("agent") && !columns.Contains("dangerous"), "legacy columns dropped");
+
+                                    List<CustomAction> actions = await db.CustomActions.EnumerateAsync().ConfigureAwait(false);
+                                    AssertTrue(actions.Count == 2, "actions kept (got " + actions.Count + ")");
+                                    AssertTrue(actions.Exists(a => a.Id == "act_1" && a.Name == "Review" && a.Prompt == "Review this repo."), "name and prompt kept");
+
+                                    // New actions insert without an agent.
+                                    await db.CustomActions.UpsertAsync(new CustomAction { Name = "New", Prompt = "p" }).ConfigureAwait(false);
+                                    AssertTrue((await db.CustomActions.EnumerateAsync().ConfigureAwait(false)).Count == 3, "insert after migration");
+                                }
+
+                                // Re-initializing an already-migrated database is a no-op.
+                                using (DatabaseDriverBase db = await DatabaseDriverFactory.CreateAndInitializeAsync(new DatabaseSettings { Filename = file }).ConfigureAwait(false))
+                                {
+                                    AssertTrue((await db.CustomActions.EnumerateAsync().ConfigureAwait(false)).Count == 3, "idempotent");
                                 }
                             }
                             finally

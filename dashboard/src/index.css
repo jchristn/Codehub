@@ -1140,6 +1140,14 @@ button.tiny,
 .ca-flag { display: flex; align-items: center; gap: var(--spacing-sm); font-size: var(--font-size-sm); }
 .ca-flag input[type='checkbox'] { width: 16px; height: 16px; flex: 0 0 auto; }
 .ca-flag code { font-family: var(--font-mono); font-size: 0.85em; color: var(--color-danger); }
+.ca-hint { margin: 0; font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+/* Custom actions table: Actions and Name size to content; the prompt fills the rest. */
+.custom-actions-view .data-table { width: 100%; }
+.custom-actions-view .data-table .cell-actions,
+.custom-actions-view .data-table .ca-name-cell { width: 1%; white-space: nowrap; }
+/* max-width: 0 lets the cell take the remaining width while its content truncates. */
+.custom-actions-view .data-table .ca-prompt-cell { width: 100%; max-width: 0; }
+.custom-actions-view .ca-prompt-preview { display: block; max-width: none; }
 .ca-prompt-preview {
   display: inline-block;
   max-width: 420px;

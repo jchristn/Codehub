@@ -123,6 +123,48 @@ namespace CodeHub.Core.Database.Sqlite
             // For overrides, the most recently created variant is the user's latest intent.
             await RebuildWithNoCaseAsync("annotations", "signalcolumn", TableQueries.Annotations,
                 new List<string>(), "createdutc DESC, rowid DESC", token).ConfigureAwait(false);
+
+            // Custom actions are agent-agnostic prompts; the agent is chosen when one is run.
+            await DropColumnsAsync("custom_actions", new List<string> { "agent", "dangerous" },
+                TableQueries.CustomActions, token).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Rebuild a table without the given legacy columns, keeping every row and the remaining
+        /// columns. Runs once per table: skipped when none of the columns exist.
+        /// </summary>
+        /// <param name="table">Table name.</param>
+        /// <param name="dropColumns">Legacy columns to remove.</param>
+        /// <param name="createSql">Current CREATE TABLE/INDEX statements for the table.</param>
+        /// <param name="token">Cancellation token.</param>
+        private async Task DropColumnsAsync(
+            string table,
+            List<string> dropColumns,
+            string createSql,
+            CancellationToken token)
+        {
+            List<string> keep = new List<string>();
+            bool found = false;
+            DataTable info = await ExecuteQueryAsync(
+                "SELECT name FROM pragma_table_info(" + Sanitizer.Quote(table) + ");", false, token).ConfigureAwait(false);
+            foreach (DataRow row in info.Rows)
+            {
+                string name = row["name"].ToString();
+                if (dropColumns.Exists(c => String.Equals(c, name, StringComparison.OrdinalIgnoreCase))) found = true;
+                else keep.Add(name);
+            }
+            if (!found) return;
+
+            string columnList = String.Join(", ", keep);
+            string staging = table + "_migrate";
+            await ExecuteQueriesAsync(new List<string>
+            {
+                "DROP TABLE IF EXISTS " + staging + ";",
+                "ALTER TABLE " + table + " RENAME TO " + staging + ";",
+                createSql,
+                "INSERT INTO " + table + " (" + columnList + ") SELECT " + columnList + " FROM " + staging + ";",
+                "DROP TABLE " + staging + ";"
+            }, token).ConfigureAwait(false);
         }
 
         /// <summary>

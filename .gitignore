@@ -17,6 +17,7 @@ logs/
 *.db-shm
 *.db-wal
 *.db-journal
+*.db.bak*
 
 # Node / dashboard
 node_modules/

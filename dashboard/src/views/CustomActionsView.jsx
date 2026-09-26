@@ -6,11 +6,10 @@ import DataTable from '../components/DataTable';
 import ActionMenu from '../components/ActionMenu';
 import CustomActionModal from '../components/CustomActionModal';
 import ConfirmModal from '../components/ConfirmModal';
-import { agentLabel } from '../utils/constants';
 
 /**
- * Manage custom actions (CRUD). Defined actions appear in the repository actions menu
- * under a "Custom Actions" section.
+ * Manage custom actions (CRUD). Actions are agent-agnostic prompts that appear in the repository
+ * actions menu under a "Custom Actions" section; the agent is chosen when one is run.
  */
 function CustomActionsView({ apiClient }) {
   const { t } = useTranslation();
@@ -76,17 +75,11 @@ function CustomActionsView({ apiClient }) {
         />
       )
     },
-    { key: 'name', label: t('customActions.name'), render: (row) => <span className="repo-name">{row.name}</span> },
-    { key: 'agent', label: t('customActions.agent'), render: (row) => agentLabel(row.agent) },
-    {
-      key: 'dangerous',
-      label: t('customActions.dangerous'),
-      className: 'cell-center',
-      render: (row) => (row.dangerous ? t('common.yes') : t('common.no'))
-    },
+    { key: 'name', label: t('customActions.name'), className: 'ca-name-cell', render: (row) => <span className="repo-name">{row.name}</span> },
     {
       key: 'prompt',
       label: t('customActions.prompt'),
+      className: 'ca-prompt-cell',
       render: (row) => <span className="ca-prompt-preview" title={row.prompt}>{row.prompt || '—'}</span>
     }
   ];
