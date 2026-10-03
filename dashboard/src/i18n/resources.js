@@ -425,7 +425,7 @@ const en = {
   addMultiple: {
     launch: 'Add multiple',
     title: 'Add multiple directories',
-    subtitle: 'Paste one directory path per line. Empty lines, duplicates, and directories that do not exist or fall outside the configured roots are ignored.',
+    subtitle: 'Paste one directory path per line. Empty lines, duplicates, and directories that do not exist are ignored.',
     placeholder: 'C:\\Code\\my-service\nC:\\Code\\another-repo\nC:\\Code\\team\\shared-lib',
     count: '{{count}} path(s)',
     add: 'Add directories',
@@ -908,7 +908,7 @@ const es = {
   addMultiple: {
     launch: 'Agregar varios',
     title: 'Agregar varios directorios',
-    subtitle: 'Pega una ruta de directorio por línea. Se ignoran las líneas vacías, los duplicados y los directorios que no existen o quedan fuera de las raíces configuradas.',
+    subtitle: 'Pega una ruta de directorio por línea. Se ignoran las líneas vacías, los duplicados y los directorios que no existen.',
     placeholder: 'C:\\Code\\mi-servicio\nC:\\Code\\otro-repo\nC:\\Code\\equipo\\libreria-compartida',
     count: '{{count}} ruta(s)',
     add: 'Agregar directorios',
@@ -1337,7 +1337,7 @@ const fr = {
   addMultiple: {
     launch: 'Ajouter plusieurs',
     title: 'Ajouter plusieurs répertoires',
-    subtitle: 'Collez un chemin de répertoire par ligne. Les lignes vides, les doublons et les répertoires inexistants ou hors des racines configurées sont ignorés.',
+    subtitle: 'Collez un chemin de répertoire par ligne. Les lignes vides, les doublons et les répertoires inexistants sont ignorés.',
     placeholder: 'C:\\Code\\mon-service\nC:\\Code\\autre-depot\nC:\\Code\\equipe\\lib-partagee',
     count: '{{count}} chemin(s)',
     add: 'Ajouter les répertoires',
@@ -1766,7 +1766,7 @@ const de = {
   addMultiple: {
     launch: 'Mehrere hinzufügen',
     title: 'Mehrere Verzeichnisse hinzufügen',
-    subtitle: 'Fügen Sie einen Verzeichnispfad pro Zeile ein. Leere Zeilen, Duplikate sowie nicht vorhandene oder außerhalb der konfigurierten Stammverzeichnisse liegende Verzeichnisse werden ignoriert.',
+    subtitle: 'Fügen Sie einen Verzeichnispfad pro Zeile ein. Leere Zeilen, Duplikate sowie nicht vorhandene Verzeichnisse werden ignoriert.',
     placeholder: 'C:\\Code\\mein-service\nC:\\Code\\anderes-repo\nC:\\Code\\team\\gemeinsame-lib',
     count: '{{count}} Pfad(e)',
     add: 'Verzeichnisse hinzufügen',
@@ -2195,7 +2195,7 @@ const pt = {
   addMultiple: {
     launch: 'Adicionar vários',
     title: 'Adicionar vários diretórios',
-    subtitle: 'Cole um caminho de diretório por linha. Linhas vazias, duplicados e diretórios que não existem ou estão fora das raízes configuradas são ignorados.',
+    subtitle: 'Cole um caminho de diretório por linha. Linhas vazias, duplicados e diretórios que não existem são ignorados.',
     placeholder: 'C:\\Code\\meu-servico\nC:\\Code\\outro-repo\nC:\\Code\\equipe\\lib-compartilhada',
     count: '{{count}} caminho(s)',
     add: 'Adicionar diretórios',

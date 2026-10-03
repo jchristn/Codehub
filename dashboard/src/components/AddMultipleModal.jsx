@@ -5,8 +5,8 @@ import { useToast } from '../context/ToastContext';
 
 /**
  * Paste-a-list modal for including many directories at once. Lines are sent as-is;
- * the server ignores empty lines, duplicates, non-existent directories, and paths
- * outside the configured roots, and reports how many were added versus ignored.
+ * the server ignores empty lines, duplicates, and non-existent directories, and
+ * reports how many were added versus ignored.
  */
 function AddMultipleModal({ apiClient, onClose, onChanged }) {
   const { t } = useTranslation();

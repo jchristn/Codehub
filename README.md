@@ -71,7 +71,7 @@ date, and languages — then rolls it all into one overall grade so you can sort
   for language, commit divergence, last-update window, and each signal's status. Sort any column.
 - **Drill-down detail.** Click a repo to see its discrete projects, outdated/vulnerable dependencies,
   the exact evidence behind each signal, and its GitHub issues/PRs/Dependabot state.
-- **You choose what's scanned.** A lazy, sandboxed directory picker with tri-state checkboxes — pick
+- **You choose what's scanned.** A lazy directory picker with tri-state checkboxes — pick
   whole trees or individual repos; the selection is remembered.
 - **Fast re-scans.** Unchanged git repositories are skipped by comparing HEAD, so a rescan only does
   the work that changed. Collection runs in parallel up to a concurrency you set.

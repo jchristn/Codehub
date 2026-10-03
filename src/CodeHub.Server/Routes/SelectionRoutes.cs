@@ -13,7 +13,7 @@ namespace CodeHub.Server.Routes
     using WatsonWebserver.Core;
 
     /// <summary>
-    /// Sandboxed filesystem browse and scan-selection routes for the directory picker.
+    /// Filesystem browse and scan-selection routes for the directory picker.
     /// </summary>
     public class SelectionRoutes
     {
@@ -78,12 +78,6 @@ namespace CodeHub.Server.Routes
             else
             {
                 string normalized = SelectionService.Normalize(path);
-                if (!IsWithinRoots(normalized, rootPaths))
-                {
-                    await RouteHelper.SendJson(ctx, _Ctx.Serializer, 403,
-                        new ErrorResponse("Forbidden", "Path is outside the configured root directories.")).ConfigureAwait(false);
-                    return;
-                }
                 if (!Directory.Exists(normalized))
                 {
                     await RouteHelper.SendJson(ctx, _Ctx.Serializer, 404,
@@ -122,12 +116,6 @@ namespace CodeHub.Server.Routes
             }
 
             string normalized = SelectionService.Normalize(request.Path);
-            if (!IsWithinRoots(normalized, _Ctx.Settings.Directories.RootPaths ?? new List<string>()))
-            {
-                await RouteHelper.SendJson(ctx, _Ctx.Serializer, 403,
-                    new ErrorResponse("Forbidden", "Path is outside the configured root directories.")).ConfigureAwait(false);
-                return;
-            }
 
             if (request.Selected) await _Ctx.Selection.SelectAsync(normalized, ctx.Token).ConfigureAwait(false);
             else await _Ctx.Selection.DeselectAsync(normalized, ctx.Token).ConfigureAwait(false);
@@ -148,7 +136,6 @@ namespace CodeHub.Server.Routes
                 string body = ctx.Request.DataAsString;
                 BulkSelectionRequest request = String.IsNullOrEmpty(body) ? null : _Ctx.Serializer.DeserializeJson<BulkSelectionRequest>(body);
                 List<string> rawPaths = request?.Paths ?? new List<string>();
-                List<string> rootPaths = _Ctx.Settings.Directories.RootPaths ?? new List<string>();
 
                 HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 List<string> valid = new List<string>();
@@ -165,9 +152,9 @@ namespace CodeHub.Server.Routes
                         continue;
                     }
 
-                    if (!IsWithinRoots(normalized, rootPaths) || !Directory.Exists(normalized))
+                    if (!Directory.Exists(normalized))
                     {
-                        ignored++; // ignore bad directories (outside roots or non-existent)
+                        ignored++; // ignore non-existent directories
                         continue;
                     }
 
@@ -233,15 +220,6 @@ namespace CodeHub.Server.Routes
                 // Not base64 (e.g. a raw path from a manual call) — use as-is.
                 return value;
             }
-        }
-
-        private static bool IsWithinRoots(string path, List<string> rootPaths)
-        {
-            foreach (string root in rootPaths)
-            {
-                if (SelectionService.PathEquals(path, root) || SelectionService.IsStrictlyUnder(path, root)) return true;
-            }
-            return false;
         }
 
         private static IEnumerable<string> SafeGetDirectories(string path)

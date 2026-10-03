@@ -10,8 +10,8 @@ namespace CodeHub.Core.Requests
         #region Public-Members
 
         /// <summary>
-        /// Absolute directory paths to include. Empty lines, duplicates, non-existent
-        /// directories, and paths outside the configured roots are ignored by the server.
+        /// Absolute directory paths to include. Empty lines, duplicates, and non-existent
+        /// directories are ignored by the server.
         /// </summary>
         public List<string> Paths { get; set; } = new List<string>();
 
