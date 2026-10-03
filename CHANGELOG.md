@@ -18,6 +18,8 @@ All notable changes to CodeHub are documented here. While CodeHub is in the 0.x 
   terminal emulator found on Linux; Delete (Recycle Bin / Trash) uses the macOS Trash or `gio` /
   `trash-cli` on Linux.
 - Scan selections are no longer restricted to the configured root directories.
+- Dependency updates: Microsoft.Data.Sqlite 10.0.12, SQLitePCLRaw.bundle_e_sqlite3 3.0.5,
+  SyslogLogging 2.3.1, Watson 7.2.2; tests now use Touchstone 0.2.0.
 
 ### Added
 - `POST /v1.0/api/custom-actions/{id}/run` runs an action in one or more repositories with
