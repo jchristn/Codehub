@@ -13,6 +13,11 @@ All notable changes to CodeHub are documented here. While CodeHub is in the 0.x 
 - `POST /v1.0/api/custom-actions` and `PUT /v1.0/api/custom-actions/{id}` take `{ name, prompt }`;
   `agent` and `dangerous` are no longer accepted or returned.
 - `POST /v1.0/api/repositories/{id}/run-agent` rejects an unknown agent with a 400 instead of a 500.
+- **Row actions, custom actions, and delete-from-disk work on macOS and Linux**, not just Windows.
+  Open Folder uses Finder / `xdg-open`; terminals and agents open in Terminal on macOS or the first
+  terminal emulator found on Linux; Delete (Recycle Bin / Trash) uses the macOS Trash or `gio` /
+  `trash-cli` on Linux.
+- Scan selections are no longer restricted to the configured root directories.
 
 ### Added
 - `POST /v1.0/api/custom-actions/{id}/run` runs an action in one or more repositories with

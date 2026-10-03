@@ -77,7 +77,7 @@ date, and languages — then rolls it all into one overall grade so you can sort
   the work that changed. Collection runs in parallel up to a concurrency you set.
 - **Polyglot discovery.** Finds .NET, Node, Python, and PowerShell projects; reports version, last
   update, and dependency freshness across all of them.
-- **Jump straight into work.** On Windows, open any repo in Explorer, a terminal, **Claude**, or
+- **Jump straight into work.** Open any repo in your file manager, a terminal, **Claude**, or
   **Codex** right from its row.
 - **Custom actions.** Save reusable prompts ("review this repo", "bump dependencies") and run them
   against one repository or a whole selection. Actions aren't tied to an agent — you pick Claude
@@ -215,8 +215,11 @@ you choose the agent (Claude Code, Codex, mux, or OpenCode) and whether to pass 
 each time you run it. Define actions on the **Custom Actions** page; run one from a repository's
 row menu, or select several rows and use **Apply Custom Action** to run it in each (one terminal per
 repository). The prompt is pre-filled from the action and editable before launch, and the dashboard
-remembers the last agent and dangerous-flag choice you made. Launching requires the CodeHub server
-to run on Windows.
+remembers the last agent and dangerous-flag choice you made. Terminals open on the machine running
+the CodeHub server: Windows Terminal (or cmd) on Windows, Terminal on macOS, and the first terminal
+emulator found on Linux (`x-terminal-emulator`, `gnome-terminal`, `konsole`, `xfce4-terminal`, `kitty`,
+`alacritty`, `xterm`, and others). On macOS and Linux the agent starts from your login shell, so
+anything your shell profile adds to `PATH` is available.
 
 The same thing over the API:
 

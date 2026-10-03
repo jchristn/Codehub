@@ -1,14 +1,18 @@
 namespace CodeHub.Server.Services
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
-    using System.Runtime.InteropServices;
+    using System.Linq;
+    using CodeHub.Core.Helpers;
     using SyslogLogging;
 
     /// <summary>
-    /// Launches external tools (Explorer, a terminal, Claude, Codex) at a repository path on the
-    /// server host. Intended for the local single-operator model; Windows only.
+    /// Launches external tools (the file manager, a terminal, Claude, Codex, mux, OpenCode) at a
+    /// repository path on the server host. Intended for the local single-operator model. Supports
+    /// Windows (Explorer, Windows Terminal or cmd), macOS (Finder, Terminal), and Linux (xdg-open,
+    /// the first terminal emulator found on PATH).
     /// </summary>
     public class LauncherService
     {
@@ -37,51 +41,36 @@ namespace CodeHub.Server.Services
         /// <summary>
         /// Open a repository path in the requested tool.
         /// </summary>
-        /// <param name="target">explorer, terminal, claude, codex, mux, or opencode.</param>
+        /// <param name="target">explorer (the file manager), terminal, claude, codex, mux, or opencode.</param>
         /// <param name="path">Repository path.</param>
         /// <param name="dangerous">Whether to pass the tool's dangerous flag.</param>
         public void Open(string target, string path, bool dangerous)
         {
             if (String.IsNullOrEmpty(target)) throw new ArgumentNullException(nameof(target));
             if (String.IsNullOrEmpty(path)) throw new ArgumentNullException(nameof(path));
-
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                throw new NotSupportedException(
-                    "These actions launch on the machine running the CodeHub server, which is not Windows. " +
-                    "Run the server on Windows to open Explorer, a terminal, Claude, or Codex.");
             if (!Directory.Exists(path))
                 throw new DirectoryNotFoundException("Repository path no longer exists: " + path);
 
-            // Snapshot existing windows so the one we're about to open can be pulled to the
-            // foreground (the server is a background process, so new windows open behind).
-            System.Collections.Generic.HashSet<IntPtr> windowsBefore = Interop.WindowForeground.Snapshot();
+            bool isExplorer = String.Equals(target.Trim(), "explorer", StringComparison.OrdinalIgnoreCase);
+            string command = isExplorer ? null : LaunchHelper.TargetCommand(target, dangerous);
 
-            switch (target.Trim().ToLowerInvariant())
+            if (OperatingSystem.IsWindows())
             {
-                case "explorer":
-                    StartExplorer(path);
-                    break;
-                case "terminal":
-                    OpenTerminal(path, null);
-                    break;
-                case "claude":
-                    OpenTerminal(path, "claude" + (dangerous ? " --dangerously-skip-permissions" : String.Empty));
-                    break;
-                case "codex":
-                    OpenTerminal(path, "codex" + (dangerous ? " --yolo" : String.Empty));
-                    break;
-                case "mux":
-                    OpenTerminal(path, "mux" + (dangerous ? " --yolo" : String.Empty));
-                    break;
-                case "opencode":
-                    OpenTerminal(path, "opencode");
-                    break;
-                default:
-                    throw new ArgumentException("Unknown launch target: " + target);
-            }
+                // Snapshot existing windows so the one we're about to open can be pulled to the
+                // foreground (the server is a background process, so new windows open behind).
+                HashSet<IntPtr> windowsBefore = Interop.WindowForeground.Snapshot();
 
-            // Pull the newly-opened window to the foreground once it appears.
-            Interop.WindowForeground.BringNewWindowToForegroundAsync(windowsBefore, 3000);
+                if (isExplorer) StartExplorer(path);
+                else OpenWindowsTerminal(path, command);
+
+                // Pull the newly-opened window to the foreground once it appears.
+                Interop.WindowForeground.BringNewWindowToForegroundAsync(windowsBefore, 3000);
+            }
+            else
+            {
+                if (isExplorer) OpenFileManager(path);
+                else OpenPosixTerminal(path, command);
+            }
 
             _Logging.Info(_Header + "launched " + target + " at " + path + (dangerous ? " (dangerous)" : String.Empty));
         }
@@ -97,23 +86,30 @@ namespace CodeHub.Server.Services
         {
             if (String.IsNullOrEmpty(agent)) throw new ArgumentNullException(nameof(agent));
             if (String.IsNullOrEmpty(path)) throw new ArgumentNullException(nameof(path));
-
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                throw new NotSupportedException(
-                    "Custom actions launch on the machine running the CodeHub server, which is not Windows. " +
-                    "Run the server on Windows to launch an agent in a terminal.");
             if (!Directory.Exists(path))
                 throw new DirectoryNotFoundException("Repository path no longer exists: " + path);
 
-            System.Collections.Generic.HashSet<IntPtr> windowsBefore = Interop.WindowForeground.Snapshot();
+            // The prompt is written verbatim to a sidecar file (newlines preserved) and read back by
+            // the launch script, which passes it to the agent as a single argument. Putting the
+            // prompt directly on a command line would mangle newlines and quotes.
+            if (OperatingSystem.IsWindows())
+            {
+                HashSet<IntPtr> windowsBefore = Interop.WindowForeground.Snapshot();
+                string batch = WriteWindowsLaunchFiles(agent, dangerous, path, prompt);
+                OpenWindowsTerminal(path, "\"" + batch + "\"");
+                Interop.WindowForeground.BringNewWindowToForegroundAsync(windowsBefore, 3000);
+            }
+            else
+            {
+                string promptFile = null;
+                if (!String.IsNullOrWhiteSpace(prompt))
+                {
+                    promptFile = NewTempStem() + ".txt";
+                    File.WriteAllText(promptFile, prompt.Trim(), new System.Text.UTF8Encoding(false));
+                }
+                OpenPosixTerminal(path, LaunchHelper.PosixAgentCommand(agent, dangerous, promptFile));
+            }
 
-            // The prompt is written verbatim to a sidecar file (newlines preserved) and read back
-            // by a PowerShell launcher that passes it to the agent as a single argument. Putting the
-            // prompt on a cmd command line would force it onto one physical line, losing newlines.
-            string batch = WriteLaunchFiles(agent, dangerous, path, prompt);
-            OpenTerminal(path, "\"" + batch + "\"");
-
-            Interop.WindowForeground.BringNewWindowToForegroundAsync(windowsBefore, 3000);
             _Logging.Info(_Header + "launched custom action (" + agent + ") at " + path + (dangerous ? " (dangerous)" : String.Empty));
         }
 
@@ -121,37 +117,21 @@ namespace CodeHub.Server.Services
 
         #region Private-Methods
 
-        private static void ResolveAgent(string agent, out string binary, out string dangerFlag, out string promptFlag)
-        {
-            promptFlag = null; // flag preceding the prompt; null means pass it positionally
-            switch (agent.Trim().ToLowerInvariant())
-            {
-                case "claude": binary = "claude"; dangerFlag = "--dangerously-skip-permissions"; break;
-                case "codex": binary = "codex"; dangerFlag = "--yolo"; break;
-                // mux needs --prompt to skip the splash screen and stay interactive.
-                case "mux": binary = "mux"; dangerFlag = "--yolo"; promptFlag = "--prompt"; break;
-                case "opencode": binary = "opencode"; dangerFlag = null; break;
-                default: throw new ArgumentException("Unknown agent: " + agent);
-            }
-        }
-
         // Escape a string for embedding inside a PowerShell single-quoted literal.
         private static string PsLiteral(string value)
         {
             return value.Replace("'", "''");
         }
 
-        // Write the three temp files that drive a custom action and return the .cmd entry point:
+        // Write the three temp files that drive a Windows custom action and return the .cmd entry point:
         //   .txt  the prompt, byte-for-byte with newlines intact
         //   .ps1  reads the prompt raw and launches the agent with it as one argument
         //   .cmd  cd's to the repo and invokes the .ps1 (keeps the existing wt/cmd /k window flow)
-        private static string WriteLaunchFiles(string agent, bool dangerous, string path, string prompt)
+        private static string WriteWindowsLaunchFiles(string agent, bool dangerous, string path, string prompt)
         {
-            ResolveAgent(agent, out string binary, out string dangerFlag, out string promptFlag);
+            LaunchHelper.ResolveAgent(agent, out string binary, out string dangerFlag, out string promptFlag);
 
-            string dir = Path.Combine(Path.GetTempPath(), "codehub");
-            Directory.CreateDirectory(dir);
-            string stem = Path.Combine(dir, "action_" + Guid.NewGuid().ToString("N"));
+            string stem = NewTempStem();
             string promptFile = stem + ".txt";
             string scriptFile = stem + ".ps1";
             string cmdFile = stem + ".cmd";
@@ -192,7 +172,14 @@ namespace CodeHub.Server.Services
             });
         }
 
-        private void OpenTerminal(string path, string command)
+        private static string NewTempStem()
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "codehub");
+            Directory.CreateDirectory(dir);
+            return Path.Combine(dir, "action_" + Guid.NewGuid().ToString("N"));
+        }
+
+        private void OpenWindowsTerminal(string path, string command)
         {
             // Prefer Windows Terminal; fall back to a cmd window if wt.exe is unavailable.
             try
@@ -220,6 +207,73 @@ namespace CodeHub.Server.Services
                 Arguments = "/c start \"CodeHub\" cmd /k \"" + inner + "\"",
                 UseShellExecute = true
             });
+        }
+
+        private static void OpenFileManager(string path)
+        {
+            if (OperatingSystem.IsMacOS())
+            {
+                StartProcess("/usr/bin/open", path);
+                return;
+            }
+
+            string opener = LaunchHelper.FindOnPath("xdg-open")
+                ?? throw new NotSupportedException("No file manager opener (xdg-open) was found on the CodeHub server.");
+            StartProcess(opener, path);
+        }
+
+        // Write the inner script (cd, run, keep a shell open) and the launcher that runs it from the
+        // user's login shell, then open the launcher in a new terminal window.
+        private void OpenPosixTerminal(string path, string command)
+        {
+            string stem = NewTempStem();
+            string inner = stem + ".sh";
+            string launcher = stem + (OperatingSystem.IsMacOS() ? ".command" : "_launch.sh");
+            WriteExecutable(inner, LaunchHelper.PosixInnerScript(path, command));
+            WriteExecutable(launcher, LaunchHelper.PosixLauncherScript(inner));
+
+            if (OperatingSystem.IsMacOS())
+            {
+                // Terminal runs a .command file in a new window and comes to the front.
+                StartProcess("/usr/bin/open", "-a", "Terminal", launcher);
+                return;
+            }
+
+            foreach (KeyValuePair<string, string[]> terminal in LaunchHelper.LinuxTerminals)
+            {
+                string binary = LaunchHelper.FindOnPath(terminal.Key);
+                if (binary == null) continue;
+                StartProcess(binary, LaunchHelper.LinuxTerminalArgs(terminal.Value, launcher).ToArray());
+                _Logging.Debug(_Header + "opened " + terminal.Key + " for " + path);
+                return;
+            }
+
+            throw new NotSupportedException(
+                "No supported terminal emulator was found on the CodeHub server. Install one of: " +
+                String.Join(", ", LaunchHelper.LinuxTerminals.Select(t => t.Key)) + ".");
+        }
+
+        private static void WriteExecutable(string file, string contents)
+        {
+            File.WriteAllText(file, contents, new System.Text.UTF8Encoding(false));
+            if (!OperatingSystem.IsWindows())
+            {
+                File.SetUnixFileMode(file,
+                    UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                    UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                    UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+            }
+        }
+
+        private static void StartProcess(string fileName, params string[] args)
+        {
+            ProcessStartInfo info = new ProcessStartInfo
+            {
+                FileName = fileName,
+                UseShellExecute = false
+            };
+            foreach (string arg in args) info.ArgumentList.Add(arg);
+            using (Process.Start(info)) { }
         }
 
         #endregion

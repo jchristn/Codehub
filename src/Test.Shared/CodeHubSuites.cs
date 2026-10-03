@@ -2,6 +2,7 @@ namespace Test.Shared
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Threading.Tasks;
     using CodeHub.Core.Database;
@@ -37,7 +38,8 @@ namespace Test.Shared
                     GitHubRefSuite(),
                     SerializerSuite(),
                     SelectionSuite(),
-                    CustomActionSuite()
+                    CustomActionSuite(),
+                    LaunchSuite()
                 };
             }
         }
@@ -550,6 +552,152 @@ namespace Test.Shared
                 });
         }
 
+
+        /// <summary>
+        /// Cross-platform launch suite: agent command lines, quoting, and the POSIX launch scripts
+        /// used on macOS and Linux (executed for real on non-Windows hosts).
+        /// </summary>
+        /// <returns>Suite descriptor.</returns>
+        public static TestSuiteDescriptor LaunchSuite()
+        {
+            return new TestSuiteDescriptor(
+                suiteId: "Launch",
+                displayName: "Launcher",
+                cases: new List<TestCaseDescriptor>
+                {
+                    new TestCaseDescriptor("Launch", "TargetCommands", "Open targets map to agent commands and flags",
+                        executeAsync: _ =>
+                        {
+                            AssertTrue(LaunchHelper.TargetCommand("terminal", true) == null, "terminal runs a plain shell");
+                            AssertTrue(LaunchHelper.TargetCommand("claude", false) == "claude", "claude");
+                            AssertTrue(LaunchHelper.TargetCommand(" Claude ", true) == "claude --dangerously-skip-permissions", "claude dangerous");
+                            AssertTrue(LaunchHelper.TargetCommand("codex", true) == "codex --yolo", "codex dangerous");
+                            AssertTrue(LaunchHelper.TargetCommand("mux", true) == "mux --yolo", "mux dangerous");
+                            AssertTrue(LaunchHelper.TargetCommand("opencode", true) == "opencode", "opencode has no dangerous flag");
+                            AssertThrows<ArgumentException>(() => LaunchHelper.TargetCommand("explorer", false), "explorer is not a terminal target");
+                            AssertThrows<ArgumentException>(() => LaunchHelper.TargetCommand("bogus", false), "unknown target rejected");
+                            return Task.CompletedTask;
+                        }),
+
+                    new TestCaseDescriptor("Launch", "AgentPromptCommand", "Agent commands pass the prompt file as one argument",
+                        executeAsync: _ =>
+                        {
+                            AssertTrue(LaunchHelper.PosixAgentCommand("claude", false, null) == "claude", "no prompt");
+                            AssertTrue(LaunchHelper.PosixAgentCommand("claude", true, "/tmp/p.txt")
+                                == "claude --dangerously-skip-permissions \"$(cat '/tmp/p.txt')\"", "claude with prompt");
+                            AssertTrue(LaunchHelper.PosixAgentCommand("mux", true, "/tmp/p.txt")
+                                == "mux --yolo --prompt \"$(cat '/tmp/p.txt')\"", "mux uses --prompt");
+                            AssertThrows<ArgumentException>(() => LaunchHelper.PosixAgentCommand("gpt", false, null), "unknown agent rejected");
+                            return Task.CompletedTask;
+                        }),
+
+                    new TestCaseDescriptor("Launch", "Quoting", "Shell and AppleScript quoting escape special characters",
+                        executeAsync: _ =>
+                        {
+                            AssertTrue(LaunchHelper.ShellQuote("it's") == "'it'\\''s'", "single quote escaped");
+                            AssertTrue(LaunchHelper.AppleScriptQuote("a \"b\" \\c") == "\"a \\\"b\\\" \\\\c\"", "applescript escaped");
+
+                            if (!OperatingSystem.IsWindows())
+                            {
+                                string nasty = "it's \"$HOME\" `id` $(id) \\ ; & | *\nline two";
+                                ProcessResult result = RunProcess("/bin/sh", null, "-c", "printf %s " + LaunchHelper.ShellQuote(nasty));
+                                AssertTrue(result.Output == nasty, "shell round-trips quoted value, got: " + result.Output);
+                            }
+                            return Task.CompletedTask;
+                        }),
+
+                    new TestCaseDescriptor("Launch", "LinuxTerminals", "Linux terminal emulators get the right arguments",
+                        executeAsync: _ =>
+                        {
+                            Dictionary<string, string[]> terminals = new Dictionary<string, string[]>();
+                            foreach (KeyValuePair<string, string[]> terminal in LaunchHelper.LinuxTerminals) terminals.Add(terminal.Key, terminal.Value);
+                            AssertTrue(String.Join(" ", LaunchHelper.LinuxTerminalArgs(terminals["gnome-terminal"], "/s.sh")) == "-- /s.sh", "gnome-terminal");
+                            AssertTrue(String.Join(" ", LaunchHelper.LinuxTerminalArgs(terminals["xterm"], "/s.sh")) == "-e /s.sh", "xterm");
+                            AssertTrue(String.Join(" ", LaunchHelper.LinuxTerminalArgs(terminals["kitty"], "/s.sh")) == "/s.sh", "kitty");
+                            AssertTrue(String.Join(" ", LaunchHelper.LinuxTerminalArgs(terminals["wezterm"], "/s.sh")) == "start -- /s.sh", "wezterm");
+                            return Task.CompletedTask;
+                        }),
+
+                    new TestCaseDescriptor("Launch", "FindOnPath", "Executables are found on a PATH list",
+                        executeAsync: _ =>
+                        {
+                            string dir = Path.Combine(Path.GetTempPath(), "codehub-path-" + Guid.NewGuid().ToString("N"));
+                            Directory.CreateDirectory(dir);
+                            try
+                            {
+                                string tool = Path.Combine(dir, "sometool");
+                                File.WriteAllText(tool, String.Empty);
+                                string pathVar = "/definitely/missing" + Path.PathSeparator + dir;
+                                AssertTrue(LaunchHelper.FindOnPath("sometool", pathVar) == tool, "found in second entry");
+                                AssertTrue(LaunchHelper.FindOnPath("othertool", pathVar) == null, "missing tool is null");
+                            }
+                            finally
+                            {
+                                Directory.Delete(dir, true);
+                            }
+                            return Task.CompletedTask;
+                        }),
+
+                    new TestCaseDescriptor("Launch", "PosixScriptsRun", "POSIX launch scripts run the agent in the repo with the prompt intact",
+                        executeAsync: _ =>
+                        {
+                            if (OperatingSystem.IsWindows()) return Task.CompletedTask; // POSIX-only path
+
+                            string root = Path.Combine(Path.GetTempPath(), "codehub-launch-" + Guid.NewGuid().ToString("N"));
+                            string bin = Path.Combine(root, "bin");
+                            string output = Path.Combine(root, "out");
+                            string repo = Path.Combine(root, "My Repo's \"Dir\"");
+                            Directory.CreateDirectory(bin);
+                            Directory.CreateDirectory(output);
+                            Directory.CreateDirectory(repo);
+                            try
+                            {
+                                // Fake agent: record the working directory and each argument.
+                                WriteScript(Path.Combine(bin, "claude"),
+                                    "#!/bin/sh\npwd > \"$OUT/pwd\"\necho $# > \"$OUT/argc\"\ni=0\nfor a in \"$@\"; do i=$((i+1)); printf '%s' \"$a\" > \"$OUT/arg$i\"; done\n");
+
+                                // Fake login shell: record each invocation; run "-c" commands with sh.
+                                string shell = Path.Combine(bin, "fakeshell");
+                                WriteScript(shell,
+                                    "#!/bin/sh\necho \"$*\" >> \"$OUT/shell\"\nif [ \"$3\" = \"-c\" ]; then exec /bin/sh -c \"$4\"; fi\n");
+
+                                string prompt = "Review this repo.\n\nIt's \"quoted\", has $HOME, `id`, and $(id)\nlast line";
+                                string promptFile = Path.Combine(root, "prompt.txt");
+                                File.WriteAllText(promptFile, prompt);
+
+                                string inner = Path.Combine(root, "inner.sh");
+                                string launcher = Path.Combine(root, "launch.sh");
+                                WriteScript(inner, LaunchHelper.PosixInnerScript(repo, LaunchHelper.PosixAgentCommand("claude", true, promptFile)));
+                                WriteScript(launcher, LaunchHelper.PosixLauncherScript(inner));
+
+                                Dictionary<string, string> env = new Dictionary<string, string>
+                                {
+                                    { "PATH", bin + Path.PathSeparator + Environment.GetEnvironmentVariable("PATH") },
+                                    { "SHELL", shell },
+                                    { "OUT", output }
+                                };
+                                ProcessResult result = RunProcess(launcher, env);
+                                AssertTrue(result.ExitCode == 0, "launcher exit code " + result.ExitCode + ": " + result.Error);
+
+                                AssertTrue(File.ReadAllText(Path.Combine(output, "pwd")).Trim() == repo, "agent ran in the repository");
+                                AssertTrue(File.ReadAllText(Path.Combine(output, "argc")).Trim() == "2", "agent got two arguments");
+                                AssertTrue(File.ReadAllText(Path.Combine(output, "arg1")) == "--dangerously-skip-permissions", "dangerous flag first");
+                                AssertTrue(File.ReadAllText(Path.Combine(output, "arg2")) == prompt, "prompt passed verbatim as one argument");
+
+                                string[] shellCalls = File.ReadAllLines(Path.Combine(output, "shell"));
+                                AssertTrue(shellCalls.Length == 2, "login shell invoked twice, got " + shellCalls.Length);
+                                AssertTrue(shellCalls[0].StartsWith("-l -i -c "), "launcher runs the inner script from an interactive login shell");
+                                AssertTrue(shellCalls[1] == "-l", "a login shell is left open afterward");
+                            }
+                            finally
+                            {
+                                Directory.Delete(root, true);
+                            }
+                            return Task.CompletedTask;
+                        })
+                });
+        }
+
         #endregion
 
         #region Private-Methods
@@ -577,6 +725,63 @@ namespace Test.Shared
                 }
             }
             throw new Exception("Signal " + type + " not found.");
+        }
+
+        private static void AssertThrows<T>(Action action, string message) where T : Exception
+        {
+            try
+            {
+                action();
+            }
+            catch (T)
+            {
+                return;
+            }
+            throw new Exception("Assertion failed (expected " + typeof(T).Name + "): " + message);
+        }
+
+        private static void WriteScript(string file, string contents)
+        {
+            File.WriteAllText(file, contents);
+            if (!OperatingSystem.IsWindows())
+                File.SetUnixFileMode(file, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+
+        private static ProcessResult RunProcess(string fileName, Dictionary<string, string> env, params string[] args)
+        {
+            ProcessStartInfo info = new ProcessStartInfo
+            {
+                FileName = fileName,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                RedirectStandardInput = true
+            };
+            foreach (string arg in args) info.ArgumentList.Add(arg);
+            if (env != null)
+            {
+                foreach (KeyValuePair<string, string> pair in env) info.Environment[pair.Key] = pair.Value;
+            }
+
+            using (Process process = Process.Start(info))
+            {
+                process.StandardInput.Close();
+                Task<string> stdout = process.StandardOutput.ReadToEndAsync();
+                Task<string> stderr = process.StandardError.ReadToEndAsync();
+                if (!process.WaitForExit(30000))
+                {
+                    process.Kill(true);
+                    throw new Exception(fileName + " timed out.");
+                }
+                return new ProcessResult { ExitCode = process.ExitCode, Output = stdout.Result, Error = stderr.Result };
+            }
+        }
+
+        private class ProcessResult
+        {
+            public int ExitCode { get; set; }
+            public string Output { get; set; }
+            public string Error { get; set; }
         }
 
         private static void AssertTrue(bool condition, string message)
